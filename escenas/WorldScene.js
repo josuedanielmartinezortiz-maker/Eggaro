@@ -9,6 +9,8 @@ export class WorldScene{
     this.characters=new CharacterManager(scene);
     this.cinematic=true;
     this.cineTime=0;
+    // En la cinemática aparecen los dos personajes.
+    for(const key in this.characters.characters)this.characters.characters[key].root.visible=true;
     this.dialogIndex=-1;
     this.dialogTimer=0;
     this.dialogs=[
