@@ -15,8 +15,8 @@ export class WorldScene{
     this.dialogTimer=0;
     this.dialogs=[
       ["MICAELA","¿Qué hacemos aquí, Mike?"],
-      ["MIKE","No sé."],
-      ["MICAELA","¿Qué es eso, Mike?"],
+      ["MIKE","No sé. Este lugar no se parece a ningún sitio que conozcamos."],
+      ["MICAELA","¿Qué es eso, Mike? Parece un huevo..."],
       ["MIKE","No sé, deberíamos averiguarlo."]
     ];
   }
@@ -218,7 +218,9 @@ export class WorldScene{
     this.dialogIndex=-1;
 
     if(this.cineUI){
-      this.cineUI.ui.remove();
+      this.cineUI.ui.style.transition="opacity .7s ease";
+      this.cineUI.ui.style.opacity="0";
+      setTimeout(()=>this.cineUI?.ui.remove(),700);
       this.cineUI=null;
     }
 
@@ -259,7 +261,7 @@ export class WorldScene{
         this.camera.lookAt(0,1,-1.4);
       }
 
-      if(this.dialogTimer>5){
+      if(this.dialogTimer>4.5){
         this.nextDialogue(false);
       }
 
