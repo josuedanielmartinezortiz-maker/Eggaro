@@ -23,12 +23,12 @@ export class WorldScene{
       ["MIKE","Vamos a acercarnos. Tal vez nos diga por qué estamos aquí."]
     ];
     this.shots=[
-      {d:3.8,cam:[5.4,2.2,7.2],look:[0,1.0,-1.0]},
-      {d:4.0,cam:[-4.2,2.0,4.0],look:[-.6,1.0,-1.8]},
-      {d:3.2,cam:[1.8,4.8,4.8],look:[0,2.2,-1.9]},
-      {d:3.0,cam:[3.4,2.0,3.2],look:[0,.8,-1.8]},
-      {d:3.8,cam:[0,1.65,3.5],look:[0,.9,-1.8]},
-      {d:4.5,cam:[-2.8,1.9,4.2],look:[0,1,-2.5]}
+      {d:4.2,cam:[0,3.8,13.5],look:[0,1,-7.5]},
+      {d:4.0,cam:[-6.2,2.7,8.5],look:[0,1,-.5]},
+      {d:3.4,cam:[4.8,5.2,9.8],look:[0,1.4,-1.9]},
+      {d:3.0,cam:[5.5,2.8,7.8],look:[0,.9,-1.7]},
+      {d:3.8,cam:[0,2.4,9.5],look:[0,.95,-2.0]},
+      {d:4.5,cam:[-4.5,2.5,8.8],look:[0,1,-2.8]}
     ];
   }
 
@@ -121,7 +121,7 @@ export class WorldScene{
 
   addFarm(){
     const farm=new THREE.Group();
-    farm.position.set(0,0,-18);
+    farm.position.set(0,0,-12);
 
     const building=new THREE.Mesh(
       new THREE.BoxGeometry(5.5,3.2,4.5),
