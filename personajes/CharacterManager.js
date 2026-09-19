@@ -68,9 +68,9 @@ export class CharacterManager{
     clothes.name=name+"Clothes";
 
     if(name==="Mike"){
-      const shirt=new THREE.Mesh(new THREE.CylinderGeometry(w*.31,w*.36,h*.18,12),this.mat(0xf1c94a));
+      const shirt=new THREE.Mesh(new THREE.CylinderGeometry(w*.52,w*.58,h*.30,16),this.mat(0xf1c94a));
       shirt.position.set(center.x,box.min.y+h*.58,center.z);
-      shirt.scale.z=.72;
+      shirt.scale.z=.82;
       clothes.add(shirt);
 
       const stripe1=new THREE.Mesh(new THREE.TorusGeometry(w*.34,w*.025,8,24),this.mat(0x3d78c9));
@@ -80,15 +80,15 @@ export class CharacterManager{
       stripe1.scale.set(1,.75,1);
       clothes.add(stripe1);
 
-      const shorts=new THREE.Mesh(new THREE.BoxGeometry(w*.58,h*.17,d*.48),this.mat(0x3f6fb0));
+      const shorts=new THREE.Mesh(new THREE.BoxGeometry(w*.82,h*.30,d*.68),this.mat(0x3f6fb0));
       shorts.position.set(center.x,box.min.y+h*.38,center.z);
       clothes.add(shorts);
 
       this.addBoots(clothes,center,box,w,h,d,0x3b8ac4);
     }else{
-      const blouse=new THREE.Mesh(new THREE.CylinderGeometry(w*.30,w*.38,h*.18,12),this.mat(0xf4a6bd));
+      const blouse=new THREE.Mesh(new THREE.CylinderGeometry(w*.50,w*.58,h*.30,16),this.mat(0xf4a6bd));
       blouse.position.set(center.x,box.min.y+h*.60,center.z);
-      blouse.scale.z=.72;
+      blouse.scale.z=.82;
       clothes.add(blouse);
 
       const collar=new THREE.Mesh(new THREE.TorusGeometry(w*.27,w*.035,8,24),this.mat(0xffd0df));
@@ -98,7 +98,7 @@ export class CharacterManager{
       collar.scale.set(1,.72,1);
       clothes.add(collar);
 
-      const skirt=new THREE.Mesh(new THREE.ConeGeometry(w*.40,h*.23,12),this.mat(0xd86b9b));
+      const skirt=new THREE.Mesh(new THREE.ConeGeometry(w*.62,h*.36,16),this.mat(0xd86b9b));
       skirt.position.set(center.x,box.min.y+h*.39,center.z);
       skirt.scale.z=.65;
       clothes.add(skirt);
@@ -113,7 +113,7 @@ export class CharacterManager{
     const bootMat=this.mat(color);
     for(const side of [-1,1]){
       const boot=new THREE.Mesh(new THREE.BoxGeometry(w*.16,h*.10,d*.28),bootMat);
-      boot.position.set(center.x+side*w*.16,box.min.y+h*.09,center.z+d*.02);
+      boot.position.set(center.x+side*w*.22,box.min.y+h*.09,center.z+d*.02);
       group.add(boot);
     }
   }
