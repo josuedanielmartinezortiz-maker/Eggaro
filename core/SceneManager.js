@@ -7,90 +7,61 @@ export class SceneManager{
     this.renderer=renderer;
     this.scene=new THREE.Scene();
     this.scene.background=new THREE.Color(0x081018);
-    this.camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,500);
+    this.camera=new THREE.PerspectiveCamera(52,innerWidth/innerHeight,.1,500);
     this.camera.position.set(0,2.5,8);
     this.scene.add(this.camera);
-    this.current=null;
-    this.started=false;
+    this.current=null; this.started=false;
     this.createStartScreen();
   }
 
   createStartScreen(){
     const ui=document.createElement("div");
     ui.id="start-screen";
-    ui.style.cssText=[
-      "position:absolute","inset:0","z-index:20","display:flex",
-      "align-items:center","justify-content:center","overflow:hidden",
-      "background:radial-gradient(circle at 50% 38%,#294c35 0%,#101b18 42%,#05070b 100%)",
-      "font-family:system-ui,sans-serif;color:white"
-    ].join(";");
-
-    const glow=document.createElement("div");
-    glow.style.cssText="position:absolute;width:70vw;height:70vw;border-radius:50%;background:radial-gradient(circle,rgba(255,220,130,.18),transparent 65%);filter:blur(20px)";
-    ui.appendChild(glow);
-
+    ui.style.cssText="position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(180deg,#07151c,#102b25 55%,#06100d);font-family:system-ui,sans-serif;color:#fff";
+    const stars=document.createElement("div");
+    stars.style.cssText="position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.55) 1px,transparent 1px);background-size:55px 55px;opacity:.18";
+    ui.appendChild(stars);
+    const horizon=document.createElement("div");
+    horizon.style.cssText="position:absolute;left:-10%;right:-10%;bottom:-25%;height:60%;background:radial-gradient(ellipse,#315e38 0%,transparent 65%);filter:blur(8px)";
+    ui.appendChild(horizon);
     const card=document.createElement("div");
-    card.style.cssText="position:relative;text-align:center;padding:32px 24px;max-width:520px;width:90%;z-index:2";
+    card.style.cssText="position:relative;width:min(520px,88%);padding:42px 28px 34px;text-align:center;background:rgba(5,12,11,.62);border:1px solid rgba(255,215,107,.3);border-radius:28px;box-shadow:0 25px 70px #0009;backdrop-filter:blur(12px)";
     ui.appendChild(card);
-
-    const small=document.createElement("div");
-    small.textContent="BIENVENIDO A";
-    small.style.cssText="font-size:clamp(12px,2vw,17px);font-weight:800;letter-spacing:6px;opacity:.75;margin-bottom:8px";
-    card.appendChild(small);
-
+    const eyebrow=document.createElement("div");
+    eyebrow.textContent="UNA AVENTURA DE HUEVOS";
+    eyebrow.style.cssText="font-size:10px;letter-spacing:4px;font-weight:800;color:#ffd76b;opacity:.9;margin-bottom:15px";
+    card.appendChild(eyebrow);
     const title=document.createElement("div");
     title.textContent="EGGARO";
-    title.style.cssText="font-size:clamp(46px,12vw,92px);font-weight:1000;letter-spacing:5px;line-height:.9;text-shadow:0 8px 30px #000";
+    title.style.cssText="font-size:clamp(54px,14vw,92px);font-weight:1000;letter-spacing:6px;line-height:.85;background:linear-gradient(#fff8d8,#ffd45b 55%,#e89128);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 12px 35px #0008";
     card.appendChild(title);
-
+    const line=document.createElement("div");
+    line.style.cssText="width:90px;height:3px;margin:18px auto;background:linear-gradient(90deg,transparent,#ffd76b,transparent)";
+    card.appendChild(line);
     const subtitle=document.createElement("div");
-    subtitle.textContent="";
-    subtitle.style.cssText="font-size:clamp(20px,5vw,38px);font-weight:900;letter-spacing:14px;margin:10px 0 34px";
+    subtitle.textContent="EL MISTERIO COMIENZA";
+    subtitle.style.cssText="font-size:clamp(11px,2.5vw,14px);letter-spacing:4px;font-weight:800;opacity:.78;margin-bottom:30px";
     card.appendChild(subtitle);
-
     const play=document.createElement("button");
-    play.type="button";
-    play.textContent="▶  JUGAR";
-    play.style.cssText=[
-      "border:0","border-radius:18px","padding:16px 58px",
-      "font-size:20px","font-weight:900","letter-spacing:2px",
-      "color:white","background:linear-gradient(135deg,#e6a83d,#c96c28)",
-      "box-shadow:0 10px 30px rgba(0,0,0,.45)",
-      "cursor:pointer","touch-action:manipulation"
-    ].join(";");
+    play.type="button"; play.textContent="JUGAR";
+    play.style.cssText="border:0;border-radius:14px;padding:16px 72px;font-size:18px;font-weight:1000;letter-spacing:3px;color:#182019;background:linear-gradient(135deg,#ffe58b,#e9a62f);box-shadow:0 9px 28px #0008;cursor:pointer;touch-action:manipulation";
     card.appendChild(play);
-
-    const hint=document.createElement("div");
-    hint.textContent="Mike • Micaela • Huevos • Gallinero";
-    hint.style.cssText="margin-top:22px;font-size:12px;opacity:.55;letter-spacing:1px";
-    card.appendChild(hint);
-
+    const footer=document.createElement("div");
+    footer.textContent="MIKE  •  MICAELA  •  GALLINERO  •  HUEVOS";
+    footer.style.cssText="margin-top:24px;font-size:9px;letter-spacing:2px;opacity:.42";
+    card.appendChild(footer);
     const enter=()=>{
       if(this.started)return;
-      this.started=true;
-      ui.style.transition="opacity .55s ease";
-      ui.style.opacity="0";
+      this.started=true; ui.style.transition="opacity .55s";ui.style.opacity="0";
       setTimeout(()=>ui.remove(),600);
       this.current=new CharacterSelection(this.scene,this.camera,(character)=>{
-        this.current=new WorldScene(this.scene,this.camera,character);
-        this.current.start();
+        this.current=new WorldScene(this.scene,this.camera,character); this.current.start();
       });
     };
-
     play.addEventListener("click",enter);
-    ui.addEventListener("keydown",e=>{if(e.key==="Enter")enter()});
     document.getElementById("game").appendChild(ui);
-    this.startUI=ui;
   }
-
   start(){}
-
-  update(dt,time){
-    if(this.current) this.current.update(dt,time);
-  }
-
-  resize(aspect){
-    this.camera.aspect=aspect;
-    this.camera.updateProjectionMatrix();
-  }
+  update(dt,time){if(this.current)this.current.update(dt,time);}
+  resize(aspect){this.camera.aspect=aspect;this.camera.updateProjectionMatrix();}
 }
