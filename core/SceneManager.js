@@ -1,5 +1,6 @@
 import * as THREE from "https://unpkg.com/three@0.180.0/build/three.module.js";
 import { WorldScene } from "../escenas/WorldScene.js";
+import { CharacterSelection } from "../escenas/CharacterSelection.js";
 
 export class SceneManager{
   constructor(renderer){
@@ -70,8 +71,10 @@ export class SceneManager{
       ui.style.transition="opacity .55s ease";
       ui.style.opacity="0";
       setTimeout(()=>ui.remove(),600);
-      this.current=new WorldScene(this.scene,this.camera);
-      this.current.start();
+      this.current=new CharacterSelection(this.scene,this.camera,(character)=>{
+        this.current=new WorldScene(this.scene,this.camera,character);
+        this.current.start();
+      });
     };
 
     play.addEventListener("click",enter);
