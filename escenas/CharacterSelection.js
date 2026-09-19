@@ -35,18 +35,12 @@ export class CharacterSelection{
       b.type="button";
       b.style.cssText="width:min(310px,42vw);min-width:145px;padding:18px 12px;border:2px solid transparent;border-radius:18px;background:#17231f;color:white;cursor:pointer;touch-action:manipulation;box-shadow:0 8px 24px #0008";
       b.innerHTML=`<div style="font-size:22px;font-weight:1000;letter-spacing:2px">${label}</div><div style="opacity:.65;margin-top:4px">${desc}</div>`;
-      b.onclick=()=>this.select(id);
+      b.onclick=()=>this.confirm(id);
       cards.appendChild(b); this.buttons[id]=b;
     }
 
-    const confirm=document.createElement("button");
-    confirm.type="button"; confirm.textContent="✓  CONTINUAR";
-    confirm.style.cssText="margin-top:24px;border:0;border-radius:16px;padding:14px 42px;font-size:17px;font-weight:900;color:white;background:#c97832;cursor:pointer;touch-action:manipulation;box-shadow:0 8px 24px #0008";
-    confirm.onclick=()=>this.confirm();
-    ui.appendChild(confirm);
-
     const status=document.createElement("div");
-    status.textContent="Cargando personajes…";
+    status.textContent="Selecciona a Mike o Micaela";
     status.style.cssText="margin-top:12px;font-size:12px;opacity:.55";
     ui.appendChild(status); this.status=status;
 
@@ -73,7 +67,7 @@ export class CharacterSelection{
         root.visible=false; this.scene.add(root); this.models[id]=root; resolve();
       },undefined,()=>resolve());
     })));
-    this.ready=true; this.status.textContent="Personajes listos";
+    this.ready=true; this.status.textContent="Selecciona tu personaje";
     this.showModel(this.selected);
   }
 
@@ -83,7 +77,8 @@ export class CharacterSelection{
     if(root) root.rotation.y=Math.PI;
   }
 
-  confirm(){
+  confirm(id=this.selected){
+    this.selected=id;
     localStorage.setItem("gamerpro_personaje",this.selected);
     this.ui.style.transition="opacity .4s ease"; this.ui.style.opacity="0";
     setTimeout(()=>{this.ui.remove();for(const key in this.models)this.scene.remove(this.models[key]);this.onConfirm(this.selected)},420);
