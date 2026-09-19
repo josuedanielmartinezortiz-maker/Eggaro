@@ -88,31 +88,95 @@ export class WorldScene{
     g.name="NoobEgg";
     g.position.set(0,7.5,-1.9);
 
-    // Un único cascarón, sin capas superpuestas ni z-fighting.
-    // Franjas horizontales visibles: amarillo arriba, verde al centro, azul abajo.
-    const geo=new THREE.SphereGeometry(.62,96,48);
+    // Huevo inspirado en el diseño de referencia: amarillo / azul / verde
+    // con dos aros oscuros y forma redondeada.
+    const geo=new THREE.SphereGeometry(.72,48,32);
     const colors=[];
     const pos=geo.attributes.position;
-    const yellow=new THREE.Color(0xffd83d),green=new THREE.Color(0x49b84a),blue=new THREE.Color(0x2685d8);
+    const yellow=new THREE.Color(0xffd43b);
+    const blue=new THREE.Color(0x2d79d8);
+    const green=new THREE.Color(0x62bd45);
     for(let i=0;i<pos.count;i++){
-      const n=(pos.getY(i)/.62+1)/2;
-      const col=n>=2/3?yellow:(n>=1/3?green:blue);
+      const n=(pos.getY(i)/.72+1)/2;
+      const col=n>=.67?yellow:(n>=.34?blue:green);
       colors.push(col.r,col.g,col.b);
     }
     geo.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));
-    const egg=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({
-      vertexColors:true,roughness:.52,metalness:0
+    const shell=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({
+      vertexColors:true,roughness:.4,metalness:.05
     }));
-    egg.scale.set(.8,1.25,.8);
-    egg.castShadow=true;
-    g.add(egg);
+    shell.scale.set(.82,1.12,.82);
+    shell.castShadow=true;
+    g.add(shell);
 
-    const glow=new THREE.PointLight(0xffd83d,0,5);
-    glow.position.y=.15;
+    const ringMat=new THREE.MeshStandardMaterial({color:0x3a3028,roughness:.35,metalness:.15});
+    for(const y of[-.04,.39]){
+      const ring=new THREE.Mesh(new THREE.TorusGeometry(.61,.045,10,48),ringMat);
+      ring.position.y=y;
+      ring.scale.x=1.08; ring.scale.z=1.08;
+      ring.castShadow=true;
+      g.add(ring);
+    }
+
+    const glow=new THREE.PointLight(0xffd43b,0,6);
+    glow.position.y=.2;
     g.add(glow);
+
     this.scene.add(g);
     this.egg=g;
+    this.eggShell=shell;
     this.eggGlow=glow;
+    this.createNoobChick();
+  }
+
+  createNoobChick(){
+    const chick=new THREE.Group();
+    chick.name="PollitoNoob";
+    chick.visible=false;
+    chick.position.set(0,-.05,-1.9);
+
+    const yellow=new THREE.MeshStandardMaterial({color:0xffd84a,roughness:.65});
+    const orange=new THREE.MeshStandardMaterial({color:0xf28b20,roughness:.65});
+    const dark=new THREE.MeshStandardMaterial({color:0x30251f,roughness:.45});
+
+    const body=new THREE.Mesh(new THREE.SphereGeometry(.78,32,24),yellow);
+    body.scale.set(.92,1.02,.82); body.position.y=.78; body.castShadow=true; chick.add(body);
+
+    const head=new THREE.Mesh(new THREE.SphereGeometry(.64,32,24),yellow);
+    head.position.set(0,1.48,.02); head.castShadow=true; chick.add(head);
+
+    // Gorra amarilla estilo Pollito Noob.
+    const cap=new THREE.Mesh(new THREE.CylinderGeometry(.46,.56,.18,32),yellow);
+    cap.position.set(0,2.03,.02); cap.rotation.x=.08; cap.castShadow=true; chick.add(cap);
+    const visor=new THREE.Mesh(new THREE.SphereGeometry(.32,24,12),yellow);
+    visor.scale.set(1.45,.18,.7); visor.position.set(0,1.96,.38); visor.castShadow=true; chick.add(visor);
+    const nMark=new THREE.Mesh(new THREE.BoxGeometry(.16,.08,.035),dark);
+    nMark.position.set(0,2.06,.52); nMark.rotation.z=-.12; chick.add(nMark);
+
+    for(const side of[-1,1]){
+      const eye=new THREE.Mesh(new THREE.SphereGeometry(.13,20,16),dark);
+      eye.position.set(side*.22,1.56,.58); chick.add(eye);
+      const wing=new THREE.Mesh(new THREE.SphereGeometry(.38,24,16),yellow);
+      wing.scale.set(.55,1,.38); wing.position.set(side*.7,.85,.02);
+      wing.rotation.z=side*.18; wing.castShadow=true; chick.add(wing);
+      const leg=new THREE.Mesh(new THREE.CylinderGeometry(.07,.08,.42,12),orange);
+      leg.position.set(side*.2,.05,.03); leg.castShadow=true; chick.add(leg);
+      const foot=new THREE.Mesh(new THREE.SphereGeometry(.16,16,10),orange);
+      foot.scale.set(1.5,.45,1.6); foot.position.set(side*.2,-.16,.16); foot.castShadow=true; chick.add(foot);
+    }
+
+    const beak=new THREE.Mesh(new THREE.ConeGeometry(.16,.28,4),orange);
+    beak.rotation.x=Math.PI/2; beak.position.set(0,1.43,.7); beak.castShadow=true; chick.add(beak);
+
+    const star=new THREE.Mesh(
+      new THREE.CircleGeometry(.25,5),
+      new THREE.MeshStandardMaterial({color:0xfff2a8,emissive:0xffd43b,emissiveIntensity:.5})
+    );
+    star.position.set(0,.82,.77); star.rotation.y=Math.PI; chick.add(star);
+
+    this.scene.add(chick);
+    this.chick=chick;
+    this.chickStartY=-.05;
   }
 
   prepareCharacters(){
@@ -136,6 +200,7 @@ export class WorldScene{
   startCinematic(){
     this.cinematic=true; this.cineTime=0; this.dialogIndex=-1; this.dialogTimer=0; this.eggFalling=true; this.eggImpact=false;
     this.cineUI.ui.style.opacity="1"; this.nextDialogue();
+    if(this.chick){this.chick.visible=false;this.chick.position.set(0,-.12,-1.9);this.chick.scale.setScalar(.55);}
     this.characters.play("Mike","walk|caminar|run|correr");
     this.characters.play("Micaela","walk|caminar|run|correr");
   }
@@ -181,15 +246,33 @@ export class WorldScene{
         this.egg.rotation.z=Math.sin(this.cineTime*4)*.06;
         this.egg.rotation.y+=dt*1.5;
       }else if(!this.eggImpact){
-        this.egg.position.y=.72; this.eggImpact=true; this.egg.scale.setScalar(1.16); this.eggGlow.intensity=5;
+        this.egg.position.y=.72;
+        this.eggImpact=true;
+        this.egg.scale.setScalar(1.12);
+        this.eggGlow.intensity=4;
+
+        // El pollito nace justo después del impacto.
+        if(this.chick){
+          this.chick.visible=true;
+          this.chick.position.set(0,-.12,-1.9);
+          this.chick.scale.setScalar(.55);
+        }
       }else{
+        const hatch=Math.min((this.cineTime-8)/2.8,1);
+        const bounce=Math.sin(hatch*Math.PI);
         this.egg.scale.lerp(new THREE.Vector3(1,1,1),Math.min(dt*5,1));
         this.egg.position.y=.72+Math.sin(this.cineTime*2)*.018;
         this.egg.rotation.y+=dt*.5;
         this.eggGlow.intensity=Math.max(0,2+Math.sin(this.cineTime*5)*.8);
+
+        if(this.chick){
+          // Sale desde dentro del huevo, creciendo y dando un pequeño salto.
+          this.chick.position.y=-.12 + bounce*.72;
+          this.chick.scale.setScalar(.55 + hatch*.45);
+          this.chick.rotation.z=Math.sin(this.cineTime*9)*.025;
+        }
       }
     }
-
     let elapsed=0,shot=this.shots[this.shots.length-1];
     for(const s of this.shots){if(this.cineTime>=elapsed&&this.cineTime<elapsed+s.d){shot=s;break;}elapsed+=s.d;}
     const target=new THREE.Vector3(...shot.cam),look=new THREE.Vector3(...shot.look);
