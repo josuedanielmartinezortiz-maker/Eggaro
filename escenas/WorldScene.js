@@ -48,7 +48,7 @@ export class WorldScene{
     this.addCinematicUI();
 
     try{
-      await this.characters.loadAll();
+      await this.characters.loadAll(this.selectedCharacter);
       this.startCinematic();
     }catch(e){
       console.warn("No se pudieron cargar Mike/Micaela:",e);
