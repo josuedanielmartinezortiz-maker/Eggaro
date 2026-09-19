@@ -79,23 +79,33 @@ export class WorldScene{
   }
 
   addEgg(){
-    const g=new THREE.Group(); g.name="NoobEgg"; g.position.set(0,7.5,-1.9);
-    const egg=new THREE.Mesh(new THREE.SphereGeometry(.62,48,32),new THREE.MeshStandardMaterial({color:0xffd83d,roughness:.55}));
-    egg.scale.set(.8,1.25,.8); egg.castShadow=true; g.add(egg);
+    const g=new THREE.Group();
+    g.name="NoobEgg";
+    g.position.set(0,7.5,-1.9);
 
-    // Tres zonas de igual altura: 1/3 amarillo, 1/3 verde y 1/3 azul.
-    const band=(color,min,max)=>{
-      const m=new THREE.Mesh(new THREE.SphereGeometry(.635,48,20,0,Math.PI*2,min,max-min),new THREE.MeshStandardMaterial({color,roughness:.5}));
-      m.scale.set(.81,1.26,.81); m.position.y=.02; m.castShadow=true; g.add(m);
-    };
-    band(0x49b84a,Math.PI/3,2*Math.PI/3);
-    band(0x2685d8,2*Math.PI/3,Math.PI/3);
+    // Un solo cascarón. Las 3 franjas son VERTICALES alrededor del huevo:
+    // amarillo, verde y azul, cada una ocupa exactamente 1/3 del giro.
+    const geo=new THREE.SphereGeometry(.62,96,48);
+    const colors=[];
+    const pos=geo.attributes.position;
+    const yellow=new THREE.Color(0xffd83d),green=new THREE.Color(0x49b84a),blue=new THREE.Color(0x2685d8);
+    for(let i=0;i<pos.count;i++){
+      const angle=(Math.atan2(pos.getZ(i),pos.getX(i))+Math.PI*2)%(Math.PI*2);
+      const sector=Math.floor(angle/(Math.PI*2/3));
+      const col=sector===0?yellow:(sector===1?green:blue);
+      colors.push(col.r,col.g,col.b);
+    }
+    geo.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));
+    const egg=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.5}));
+    egg.scale.set(.8,1.25,.8);
+    egg.castShadow=true;
+    g.add(egg);
 
-    const yellowTop=new THREE.Mesh(new THREE.SphereGeometry(.638,48,20,0,Math.PI*2,0,Math.PI/3),new THREE.MeshStandardMaterial({color:0xffd83d,roughness:.5}));
-    yellowTop.scale.set(.815,1.27,.815); yellowTop.position.y=.02; g.add(yellowTop);
-
-    const glow=new THREE.PointLight(0xffd83d,0,5); glow.position.y=.15; g.add(glow);
-    this.scene.add(g); this.egg=g; this.eggGlow=glow;
+    const glow=new THREE.PointLight(0xffd83d,0,5);
+    glow.position.y=.15;
+    g.add(glow);
+    this.scene.add(g);
+    this.egg=g; this.eggGlow=glow;
   }
 
   prepareCharacters(){
