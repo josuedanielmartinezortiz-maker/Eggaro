@@ -1,8 +1,9 @@
 import * as THREE from "https://unpkg.com/three@0.180.0/build/three.module.js";
+import { CharacterManager } from "../personajes/CharacterManager.js";
 
 export class WorldScene{
-  constructor(scene,camera){this.scene=scene;this.camera=camera;this.t=0}
-  start(){
+  constructor(scene,camera){this.scene=scene;this.camera=camera;this.t=0;this.characters=new CharacterManager(scene)}
+  async start(){
     const hemi=new THREE.HemisphereLight(0xcfe8ff,0x203018,2.2); this.scene.add(hemi);
     const sun=new THREE.DirectionalLight(0xfff0d0,3.5);
     sun.position.set(8,14,6); sun.castShadow=true; sun.shadow.mapSize.set(2048,2048);
@@ -10,27 +11,25 @@ export class WorldScene{
     this.scene.add(sun);
     const ground=new THREE.Mesh(new THREE.PlaneGeometry(80,80),new THREE.MeshStandardMaterial({color:0x29452b,roughness:.95}));
     ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;this.scene.add(ground);
-    this.addPath(); this.addTrees(); this.addRocks();
-    this.addTitle();
+    this.addPath(); this.addTrees(); this.addRocks(); this.addTitle();
+    try{await this.characters.loadAll()}catch(e){console.warn("No se pudieron cargar Mike/Micaela:",e)}
   }
   addPath(){
     const path=new THREE.Mesh(new THREE.PlaneGeometry(7,70),new THREE.MeshStandardMaterial({color:0x806448,roughness:1}));
     path.rotation.x=-Math.PI/2;path.position.y=.012;this.scene.add(path);
   }
   addTrees(){
-    for(let z=-28;z<=28;z+=5){
-      for(const x of [-8,-6.2,6.2,8]){
-        const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.22,.3,2.3,8),new THREE.MeshStandardMaterial({color:0x5b3924}));
-        trunk.position.set(x+(z%10)*.06,1.15,z);trunk.castShadow=true;this.scene.add(trunk);
-        const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.35,1),new THREE.MeshStandardMaterial({color:0x245b32,roughness:.9}));
-        crown.position.set(trunk.position.x,2.7,z);crown.castShadow=true;this.scene.add(crown);
-      }
+    for(let z=-28;z<=28;z+=5) for(const x of [-8,-6.2,6.2,8]){
+      const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.22,.3,2.3,8),new THREE.MeshStandardMaterial({color:0x5b3924}));
+      trunk.position.set(x+(z%10)*.06,1.15,z);trunk.castShadow=true;this.scene.add(trunk);
+      const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.35,1),new THREE.MeshStandardMaterial({color:0x245b32,roughness:.9}));
+      crown.position.set(trunk.position.x,2.7,z);crown.castShadow=true;this.scene.add(crown);
     }
   }
   addRocks(){
     for(let i=0;i<18;i++){
       const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.35+Math.random()*.45,0),new THREE.MeshStandardMaterial({color:0x53605b,roughness:1}));
-      rock.position.set((Math.random()<.5?-1:1)*(4.5+Math.random()*5),.3, -30+Math.random()*60);
+      rock.position.set((Math.random()<.5?-1:1)*(4.5+Math.random()*5),.3,-30+Math.random()*60);
       rock.rotation.y=Math.random()*6;rock.castShadow=true;this.scene.add(rock);
     }
   }
