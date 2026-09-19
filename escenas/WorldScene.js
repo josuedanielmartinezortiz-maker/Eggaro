@@ -83,20 +83,21 @@ export class WorldScene{
     g.name="NoobEgg";
     g.position.set(0,7.5,-1.9);
 
-    // Un solo cascarón. Las 3 franjas son VERTICALES alrededor del huevo:
-    // amarillo, verde y azul, cada una ocupa exactamente 1/3 del giro.
+    // Un único cascarón, sin capas superpuestas ni z-fighting.
+    // Franjas horizontales visibles: amarillo arriba, verde al centro, azul abajo.
     const geo=new THREE.SphereGeometry(.62,96,48);
     const colors=[];
     const pos=geo.attributes.position;
     const yellow=new THREE.Color(0xffd83d),green=new THREE.Color(0x49b84a),blue=new THREE.Color(0x2685d8);
     for(let i=0;i<pos.count;i++){
-      const angle=(Math.atan2(pos.getZ(i),pos.getX(i))+Math.PI*2)%(Math.PI*2);
-      const sector=Math.floor(angle/(Math.PI*2/3));
-      const col=sector===0?yellow:(sector===1?green:blue);
+      const n=(pos.getY(i)/.62+1)/2;
+      const col=n>=2/3?yellow:(n>=1/3?green:blue);
       colors.push(col.r,col.g,col.b);
     }
     geo.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));
-    const egg=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.5}));
+    const egg=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({
+      vertexColors:true,roughness:.52,metalness:0
+    }));
     egg.scale.set(.8,1.25,.8);
     egg.castShadow=true;
     g.add(egg);
@@ -105,7 +106,8 @@ export class WorldScene{
     glow.position.y=.15;
     g.add(glow);
     this.scene.add(g);
-    this.egg=g; this.eggGlow=glow;
+    this.egg=g;
+    this.eggGlow=glow;
   }
 
   prepareCharacters(){
