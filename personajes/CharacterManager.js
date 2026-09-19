@@ -43,7 +43,7 @@ export class CharacterManager{
           root,animations:clips,mixer,currentAction:null,
           bones,
           proceduralWalk:false,
-          walkClock:0
+          walkClock:0,groundY:root.position.y
         };
         resolve(root);
       },undefined,reject);
@@ -148,7 +148,7 @@ export class CharacterManager{
     const s=Math.sin(c.walkClock*8.0);
     const s2=Math.sin(c.walkClock*8.0+Math.PI);
 
-    c.root.position.y=Math.max(0,c.root.position.y)+Math.abs(s)*.025;
+    c.root.position.y=Math.max(0,c.groundY||0)+Math.abs(s)*.025;
     c.root.rotation.z=Math.sin(c.walkClock*4)*.018;
 
     const find=(patterns)=>c.bones.find(b=>patterns.some(p=>p.test(b.name)));
