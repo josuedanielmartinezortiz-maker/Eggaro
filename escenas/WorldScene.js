@@ -135,7 +135,7 @@ export class WorldScene{
     if(this.cineUI){this.cineUI.ui.style.opacity="0";setTimeout(()=>this.cineUI?.ui.remove(),650);this.cineUI=null;}
     this.characters.setVisible(this.selectedCharacter);
     const selected=this.characters.characters[this.selectedCharacter]?.root;
-    if(selected){selected.position.set(0,0,0);selected.rotation.y=0;}
+    if(selected){selected.position.set(0,selected.position.y,0);selected.rotation.y=0;}
     this.camera.position.set(7,4.8,8); this.camera.lookAt(0,1,0);
   }
 
@@ -151,8 +151,8 @@ export class WorldScene{
     // Caminata real durante casi toda la cinemática: 0-60 s.
     if(this.cineTime<60){
       const p=Math.min(this.cineTime/60,1);
-      if(mike)mike.position.lerpVectors(new THREE.Vector3(-1.45,0,4.2),new THREE.Vector3(-.72,0,-12.8),p);
-      if(micaela)micaela.position.lerpVectors(new THREE.Vector3(1.45,0,4.5),new THREE.Vector3(.72,0,-12.55),p);
+      if(mike)mike.position.lerpVectors(new THREE.Vector3(-1.45,mike.position.y,4.2),new THREE.Vector3(-.72,mike.position.y,-12.8),p);
+      if(micaela)micaela.position.lerpVectors(new THREE.Vector3(1.45,micaela.position.y,4.5),new THREE.Vector3(.72,micaela.position.y,-12.55),p);
       if(mike)mike.rotation.y=.08;
       if(micaela)micaela.rotation.y=-.08;
     }
