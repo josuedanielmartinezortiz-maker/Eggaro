@@ -39,12 +39,12 @@ export class SceneManager{
     card.appendChild(small);
 
     const title=document.createElement("div");
-    title.textContent="GAMERPRO";
+    title.textContent="EGGARO";
     title.style.cssText="font-size:clamp(46px,12vw,92px);font-weight:1000;letter-spacing:5px;line-height:.9;text-shadow:0 8px 30px #000";
     card.appendChild(title);
 
     const subtitle=document.createElement("div");
-    subtitle.textContent="GAME";
+    subtitle.textContent="";
     subtitle.style.cssText="font-size:clamp(20px,5vw,38px);font-weight:900;letter-spacing:14px;margin:10px 0 34px";
     card.appendChild(subtitle);
 
