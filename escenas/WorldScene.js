@@ -49,12 +49,17 @@ export class WorldScene{
     ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; this.scene.add(ground);
     const path=new THREE.Mesh(new THREE.PlaneGeometry(3,75),new THREE.MeshStandardMaterial({color:0x876d4d,roughness:1}));
     path.rotation.x=-Math.PI/2; path.position.y=.015; this.scene.add(path);
+    // Pinos cerrados alrededor del camino: tronco + tres copas cónicas escalonadas.
     for(let z=-31;z<=29;z+=3.5)for(const side of[-1,1]){
       const x=side*(3.6+Math.sin(z*1.4)*.45);
-      const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.15,.28,2.7,8),new THREE.MeshStandardMaterial({color:0x4b3221,roughness:1}));
-      trunk.position.set(x,1.35,z); trunk.castShadow=true; this.scene.add(trunk);
-      const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.25,1),new THREE.MeshStandardMaterial({color:0x245331,roughness:.9}));
-      crown.position.set(x,2.85,z); crown.scale.set(1,1.15,.9); crown.castShadow=true; this.scene.add(crown);
+      const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.14,.26,2.8,8),new THREE.MeshStandardMaterial({color:0x4b3221,roughness:1}));
+      trunk.position.set(x,1.4,z); trunk.castShadow=true; this.scene.add(trunk);
+      const mat=new THREE.MeshStandardMaterial({color:0x1f5a32,roughness:.92});
+      const layers=[[1.55,2.45,1.05],[1.25,3.05,.9],[.92,3.55,.72]];
+      for(const [radius,y,h] of layers){
+        const crown=new THREE.Mesh(new THREE.ConeGeometry(radius,h,9),mat);
+        crown.position.set(x,y,z); crown.castShadow=true; crown.receiveShadow=true; this.scene.add(crown);
+      }
     }
     for(let i=0;i<24;i++){
       const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.16+Math.random()*.34,0),new THREE.MeshStandardMaterial({color:0x5b655e,roughness:1}));
@@ -112,8 +117,8 @@ export class WorldScene{
 
   prepareCharacters(){
     const mike=this.characters.characters.Mike?.root, micaela=this.characters.characters.Micaela?.root;
-    if(mike){mike.visible=true;mike.position.set(-1.45,0,4.2);mike.rotation.y=.12;}
-    if(micaela){micaela.visible=true;micaela.position.set(1.45,0,4.5);micaela.rotation.y=-.12;}
+    if(mike){mike.visible=true;mike.position.set(-1.45,mike.position.y,4.2);mike.rotation.y=.12;}
+    if(micaela){micaela.visible=true;micaela.position.set(1.45,micaela.position.y,4.5);micaela.rotation.y=-.12;}
   }
 
   addCinematicUI(){
