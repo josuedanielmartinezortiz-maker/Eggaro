@@ -16,12 +16,12 @@ export class WorldScene{
       ["MIKE","Vamos a acercarnos. Tal vez nos diga por qué estamos aquí."]
     ];
     this.shots=[
-      {d:8,cam:[0,4.8,15],look:[0,1.2,-4]},
-      {d:10,cam:[-7,3.3,11],look:[0,1,-.5]},
-      {d:10,cam:[7,4.6,11],look:[0,1.4,-1.5]},
-      {d:10,cam:[5,3.0,8],look:[0,1,-1.8]},
-      {d:10,cam:[0,3.2,10],look:[0,1,-2.2]},
-      {d:12,cam:[-5.5,3.2,9],look:[0,1,-3]}
+      {d:10,cam:[0,5.5,18],look:[0,1.2,-6]},
+      {d:10,cam:[-8,4,16],look:[0,1,-4]},
+      {d:10,cam:[8,5,16],look:[0,1.4,-5]},
+      {d:10,cam:[6,3.5,13],look:[0,1,-4]},
+      {d:10,cam:[0,4,15],look:[0,1,-6]},
+      {d:12,cam:[-6,4,16],look:[0,1,-8]}
     ];
   }
 
@@ -64,7 +64,7 @@ export class WorldScene{
   }
 
   addFarm(){
-    const farm=new THREE.Group(); farm.position.set(0,0,-12);
+    const farm=new THREE.Group(); farm.position.set(0,0,-30);
     const building=new THREE.Mesh(new THREE.BoxGeometry(5.5,3.2,4.5),new THREE.MeshStandardMaterial({color:0xb94f35,roughness:.9}));
     building.position.y=1.6; building.castShadow=true; farm.add(building);
     const roof=new THREE.Mesh(new THREE.ConeGeometry(4.2,2.3,4),new THREE.MeshStandardMaterial({color:0x6f3828,roughness:1}));
@@ -151,8 +151,8 @@ export class WorldScene{
     // Caminata real durante casi toda la cinemática: 0-60 s.
     if(this.cineTime<60){
       const p=Math.min(this.cineTime/60,1);
-      if(mike)mike.position.lerpVectors(new THREE.Vector3(-1.45,0,4.2),new THREE.Vector3(-.72,0,-2.8),p);
-      if(micaela)micaela.position.lerpVectors(new THREE.Vector3(1.45,0,4.5),new THREE.Vector3(.72,0,-2.55),p);
+      if(mike)mike.position.lerpVectors(new THREE.Vector3(-1.45,0,4.2),new THREE.Vector3(-.72,0,-12.8),p);
+      if(micaela)micaela.position.lerpVectors(new THREE.Vector3(1.45,0,4.5),new THREE.Vector3(.72,0,-12.55),p);
       if(mike)mike.rotation.y=.08;
       if(micaela)micaela.rotation.y=-.08;
     }
