@@ -2,7 +2,7 @@ import * as THREE from "https://unpkg.com/three@0.180.0/build/three.module.js";
 import { CharacterManager } from "../personajes/CharacterManager.js";
 
 export class WorldScene{
-  constructor(scene,camera){
+  constructor(scene,camera,selectedCharacter="Mike"){
     this.scene=scene;
     this.camera=camera;
     this.t=0;
