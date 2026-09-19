@@ -25,15 +25,24 @@ export class CharacterManager {
         root.position.set(x,0,0);
         root.scale.setScalar(1.8);
 
-        // No agregamos ropa geométrica encima del modelo:
-        // eso hacía que las prendas quedaran flotando o atravesaran
-        // el cuerpo. Se conserva el modelo 3D original completo.
         root.traverse(o=>{
           if(o.isMesh){
             o.castShadow=true;
             o.receiveShadow=true;
           }
         });
+
+        // Ropa ajustada al tamaño REAL del GLB, no a coordenadas fijas.
+        // Cada prenda se crea dentro del mismo root para que conserve
+        // exactamente la escala/posición del personaje.
+        const box=new THREE.Box3().setFromObject(root);
+        const size=box.getSize(new THREE.Vector3());
+        const center=box.getCenter(new THREE.Vector3());
+        const h=size.y;
+        const w=size.x;
+
+        if(name==="Mike") this.addMikeClothes(root,center,size);
+        else this.addMicaelaClothes(root,center,size);
 
         this.scene.add(root);
         this.characters[name]={
