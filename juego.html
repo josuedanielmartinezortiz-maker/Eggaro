@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>EGGARO · Juego</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;background:#78c95a}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block}
+#hud{position:fixed;top:12px;left:12px;right:12px;display:flex;gap:8px;align-items:center;justify-content:space-between;pointer-events:none}
+.panel{background:#10251ddd;color:#fff;border:1px solid #ffffff35;border-radius:14px;padding:9px 12px;font-weight:800;box-shadow:0 5px 18px #0003}
+#resources{display:flex;gap:7px;flex-wrap:wrap}
+#hint{max-width:330px;text-align:center}
+#actions{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:9px;flex-wrap:wrap;justify-content:center;width:min(96vw,700px)}
+button{border:0;border-radius:15px;padding:13px 17px;background:#ffd34f;color:#50360a;font-weight:1000;font-size:16px;box-shadow:0 5px 0 #a56e15;cursor:pointer;touch-action:manipulation}
+button:active{transform:translateY(3px);box-shadow:0 2px 0 #a56e15}
+#eggPanel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,90vw);background:#10251df5;color:#fff;border:1px solid #ffffff40;border-radius:22px;padding:22px;text-align:center;display:none;box-shadow:0 20px 60px #0008}
+#egg{font-size:86px;display:block;animation:bob 1.2s ease-in-out infinite}
+#result{min-height:50px;font-size:22px;font-weight:900;margin:12px}
+@keyframes bob{50%{transform:translateY(-8px) rotate(2deg)}}
+.small{opacity:.75;font-size:13px;font-weight:700}
+@media(max-width:600px){#hint{display:none}button{font-size:14px;padding:12px 13px}}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud">
+  <div class="panel" id="resources">🪵 0 · 🌾 0 · 🌱 0</div>
+  <div class="panel" id="hint">Acércate a un recurso y pulsa su acción</div>
+</div>
+<div id="actions">
+  <button id="left">◀</button><button id="up">▲</button><button id="down">▼</button><button id="right">▶</button>
+  <button id="act">✨ ACCIÓN</button><button id="openEgg">🥚 HUEVO</button>
+</div>
+<div id="eggPanel">
+  <div id="egg">🥚</div>
+  <h2>Huevo Noob</h2>
+  <div class="small">Noob 98% · Zombie 1% · Pollito Noob 1%</div>
+  <div id="result">Pulsa ABRIR</div>
+  <button id="hatch">🥚 ABRIR HUEVO</button>
+  <button id="closeEgg">Cerrar</button>
+</div>
+<script>
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+let W=innerWidth,H=innerHeight,dpr=Math.min(devicePixelRatio||1,2);
+function resize(){W=innerWidth;H=innerHeight;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0)}
+addEventListener('resize',resize);resize();
+
+const player={x:0,y:0,speed:3.2};
+const resources=[
+ {type:'tree',x:-250,y:-120,hp:3,alive:true},
+ {type:'tree',x:280,y:-180,hp:3,alive:true},
+ {type:'tree',x:-330,y:210,hp:3,alive:true},
+ {type:'crop',x:180,y:230,hp:2,alive:true},
+ {type:'crop',x:320,y:100,hp:2,alive:true},
+ {type:'pickup',x:-80,y:-260,hp:1,alive:true}
+];
+const state={wood:0,wheat:0,seeds:0};
+const keys={};
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
+function bind(id,k){const b=document.getElementById(id);['pointerdown','touchstart'].forEach(ev=>b.addEventListener(ev,e=>{e.preventDefault();keys[k]=true}));['pointerup','pointercancel','pointerleave','touchend'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false))}
+bind('left','a');bind('right','d');bind('up','w');bind('down','s');
+
+function nearest(){
+ let best=null,dist=9999;
+ for(const r of resources)if(r.alive){const d=Math.hypot(r.x-player.x,r.y-player.y);if(d<dist){dist=d;best=r}}
+ return {r:best,d:dist};
+}
+function act(){
+ const n=nearest(); if(!n.r||n.d>105){document.getElementById('hint').textContent='Acércate más a un árbol, cultivo o recurso';return}
+ const r=n.r;r.hp--;
+ if(r.type==='tree'){
+   document.getElementById('hint').textContent=r.hp>0?'🌳 Golpeaste el árbol':'🪵 ¡Árbol talado! Recogiste madera';
+   if(r.hp<=0){r.alive=false;state.wood+=3}
+ }else if(r.type==='crop'){
+   document.getElementById('hint').textContent=r.hp>0?'🌾 Cosechando…':'🌾 ¡Cosecha lista!';
+   if(r.hp<=0){r.alive=false;state.wheat+=4;state.seeds+=1}
+ }else{
+   r.alive=false;state.seeds+=2;document.getElementById('hint').textContent='🌱 Recogiste semillas';
+ }
+ updateHUD();
+}
+document.getElementById('act').onclick=act;
+
+function updateHUD(){document.getElementById('resources').textContent='🪵 '+state.wood+' · 🌾 '+state.wheat+' · 🌱 '+state.seeds}
+function move(){let dx=0,dy=0;if(keys.a||keys.arrowleft)dx--;if(keys.d||keys.arrowright)dx++;if(keys.w||keys.arrowup)dy--;if(keys.s||keys.arrowdown)dy++;if(dx||dy){const l=Math.hypot(dx,dy);player.x+=dx/l*player.speed;player.y+=dy/l*player.speed}}
+function draw(){
+ ctx.clearRect(0,0,W,H);
+ const ox=W/2-player.x,oy=H/2-player.y;
+ ctx.fillStyle='#72b84c';ctx.fillRect(0,0,W,H);
+ ctx.fillStyle='#b9894e';ctx.beginPath();ctx.moveTo(W*.42,0);ctx.lineTo(W*.58,0);ctx.lineTo(W*.75,H);ctx.lineTo(W*.25,H);ctx.closePath();ctx.fill();
+ // forest
+ for(let i=0;i<34;i++){const x=(i%2?1:-1)*(330+(i*71)%240)+ox,y=((i*113)%900)-450+oy;drawTree(x,y,.8+(i%3)*.12)}
+ for(const r of resources)if(r.alive){const x=r.x+ox,y=r.y+oy;if(r.type==='tree')drawTree(x,y,1.05);else if(r.type==='crop')drawCrop(x,y);else drawPickup(x,y)}
+ // player
+ const px=W/2,py=H/2;ctx.fillStyle='#e8b37b';ctx.beginPath();ctx.arc(px,py-28,18,0,Math.PI*2);ctx.fill();ctx.fillStyle='#355e9b';ctx.fillRect(px-19,py-10,38,45);ctx.fillStyle='#333';ctx.fillRect(px-14,py+35,9,18);ctx.fillRect(px+5,py+35,9,18);
+}
+function drawTree(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.fillStyle='#70472c';ctx.fillRect(-9,5,18,48);ctx.fillStyle='#2f7d3d';for(const p of [[0,-18],[-28,2],[27,2],[0,18]]){ctx.beginPath();ctx.arc(p[0],p[1],31,0,Math.PI*2);ctx.fill()}ctx.restore()}
+function drawCrop(x,y){ctx.strokeStyle='#e5c15b';ctx.lineWidth=6;for(let i=-18;i<=18;i+=9){ctx.beginPath();ctx.moveTo(x+i,y+20);ctx.lineTo(x+i-3,y-20);ctx.stroke()}}
+function drawPickup(x,y){ctx.font='34px sans-serif';ctx.fillText('🌱',x-17,y+12)}
+function loop(){move();draw();requestAnimationFrame(loop)}loop();
+
+const panel=document.getElementById('eggPanel');
+document.getElementById('openEgg').onclick=()=>{panel.style.display='block';document.getElementById('result').textContent='Pulsa ABRIR'};
+document.getElementById('closeEgg').onclick=()=>panel.style.display='none';
+document.getElementById('hatch').onclick=()=>{
+ const n=Math.random()*100;
+ let result=n<98?'🐔 Noob — 98%':n<99?'🧟 Zombie — 1%':'🐤 Pollito Noob — 1%';
+ document.getElementById('result').textContent='Resultado: '+result;
+};
+</script>
+</body>
+</html>
