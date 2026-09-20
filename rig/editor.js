@@ -1,10 +1,13 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js';
 import {GLTFLoader} from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
+import {DRACOLoader} from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/DRACOLoader.js';
 import {GLTFExporter} from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/exporters/GLTFExporter.js';
 import {SkeletonHelper} from 'https://cdn.jsdelivr.net/npm/three@0.180.0/src/helpers/SkeletonHelper.js';
 
 const $=id=>document.getElementById(id), V=$('view'), status=$('status');
+const dracoLoader=new DRACOLoader(); dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/libs/draco/');
+const loader=new GLTFLoader(); loader.setDRACOLoader(dracoLoader);
 const scene=new THREE.Scene(); scene.background=new THREE.Color(0x0b0f15);
 const camera=new THREE.PerspectiveCamera(45,1,.01,100); camera.position.set(3,2.4,5);
 const renderer=new THREE.WebGLRenderer({antialias:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); V.appendChild(renderer.domElement);
@@ -70,16 +73,17 @@ $('toggleSkeleton').onclick=()=>{if(!root)return;if(helper){scene.remove(helper)
 $('color').oninput=()=>{selected=findSelected();if(selected)selected.material.color.set($('color').value)};
 async function loadGLBData(buffer,name){
  status.textContent='Cargando '+name+'...';
- new GLTFLoader().parse(buffer,'',g=>{
+ loader.parse(buffer,'',g=>{
    if(root)scene.remove(root);
    root=g.scene; root.name=name.replace(/\.glb$/i,''); scene.add(root);
    bones=[]; skeleton=null; rigCreated=false;
    root.traverse(o=>{if(o.isBone)bones.push(o);if(o.isMesh&&!o.userData.id)o.userData.id=crypto.randomUUID()});
-   fillBones(); refreshObjects();
+   fillBones(); refreshObjects(); frameModel();
    status.textContent='✅ '+name+' cargado · '+bones.length+' huesos · pulsa Crear rig automático';
  },err=>{console.error(err);status.textContent='❌ No se pudo cargar '+name});
 }
 $('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{await loadGLBData(await f.arrayBuffer(),f.name)}catch(err){console.error(err);status.textContent='❌ Archivo GLB inválido'}};
+function frameModel(){if(!root)return;const box=new THREE.Box3().setFromObject(root);const size=box.getSize(new THREE.Vector3());const center=box.getCenter(new THREE.Vector3());const max=Math.max(size.x,size.y,size.z)||1;camera.position.set(center.x+max*1.8,center.y+max*1.1,center.z+max*2.2);controls.target.copy(center);controls.update()}
 async function loadRepoGLB(url,name){
  try{const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);await loadGLBData(await res.arrayBuffer(),name)}
  catch(err){console.error(err);status.textContent='❌ No se pudo descargar '+name}
@@ -137,4 +141,3 @@ $('projectFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=ne
 function download(data,name){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'model/gltf-binary'}));a.download=name;a.click()}
 $('exportBtn').onclick=()=>{if(!root){status.textContent='Crea o carga un pollo';return}status.textContent='Exportando Draco...';new GLTFExporter().parse(root,async data=>{try{const {WebIO}=await import('https://esm.sh/@gltf-transform/core');const {draco}=await import('https://esm.sh/@gltf-transform/functions');const io=new WebIO();const doc=await io.readBinary(new Uint8Array(data));await doc.transform(draco({method:'edgebreaker',encodeSpeed:5,decodeSpeed:5}));download(await io.writeBinary(doc),(root.name||'Eggaro')+'_Draco.glb');status.textContent='GLB Draco exportado'}catch(e){console.error(e);download(data,(root.name||'Eggaro')+'.glb');status.textContent='GLB exportado sin Draco'}} ,e=>{console.error(e);status.textContent='Error de exportación'},{binary:true,trs:true})};
 
-$('newBtn').click();
