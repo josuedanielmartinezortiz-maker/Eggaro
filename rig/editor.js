@@ -68,7 +68,24 @@ $('bones').onchange=loadBone;
 $('resetBone').onclick=()=>{bones.forEach(b=>b.rotation.set(0,0,0));if(rigCreated)buildAutoSkeleton();loadBone();status.textContent='Rig restaurado'};
 $('toggleSkeleton').onclick=()=>{if(!root)return;if(helper){scene.remove(helper);helper=null}else{helper=new SkeletonHelper(root);scene.add(helper)}};
 $('color').oninput=()=>{selected=findSelected();if(selected)selected.material.color.set($('color').value)};
-$('file').onchange=e=>{const f=e.target.files[0];if(!f)return;new GLTFLoader().load(URL.createObjectURL(f),g=>{if(root)scene.remove(root);root=g.scene;root.name=f.name.replace(/\.glb$/i,'');scene.add(root);bones=[];skeleton=null;rigCreated=false;root.traverse(o=>{if(o.isBone)bones.push(o);if(o.isMesh&&!o.userData.id)o.userData.id=crypto.randomUUID()});fillBones();refreshObjects();status.textContent='GLB cargado · '+bones.length+' huesos · pulsa Crear rig automático'},undefined,err=>{console.error(err);status.textContent='Error al cargar GLB'})};
+async function loadGLBData(buffer,name){
+ status.textContent='Cargando '+name+'...';
+ new GLTFLoader().parse(buffer,'',g=>{
+   if(root)scene.remove(root);
+   root=g.scene; root.name=name.replace(/\.glb$/i,''); scene.add(root);
+   bones=[]; skeleton=null; rigCreated=false;
+   root.traverse(o=>{if(o.isBone)bones.push(o);if(o.isMesh&&!o.userData.id)o.userData.id=crypto.randomUUID()});
+   fillBones(); refreshObjects();
+   status.textContent='✅ '+name+' cargado · '+bones.length+' huesos · pulsa Crear rig automático';
+ },err=>{console.error(err);status.textContent='❌ No se pudo cargar '+name});
+}
+$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{await loadGLBData(await f.arrayBuffer(),f.name)}catch(err){console.error(err);status.textContent='❌ Archivo GLB inválido'}};
+async function loadRepoGLB(url,name){
+ try{const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);await loadGLBData(await res.arrayBuffer(),name)}
+ catch(err){console.error(err);status.textContent='❌ No se pudo descargar '+name}
+}
+$('loadMike').onclick=()=>loadRepoGLB('../mike-optimized.glb','mike-optimized.glb');
+$('loadMicaela').onclick=()=>loadRepoGLB('../micaela-optimized.glb','micaela-optimized.glb');
 
 
 // ===== RIG AUTOMÁTICO EDITABLE =====
