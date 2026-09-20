@@ -28,75 +28,143 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.m
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x83cdf4);
-scene.fog=new THREE.Fog(0x83cdf4,28,85);
-const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,140);
+scene.fog=new THREE.Fog(0x83cdf4,30,92);
+const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,150);
 const renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.7)); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.55));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 document.getElementById('scene').appendChild(renderer.domElement);
 
-const hemi=new THREE.HemisphereLight(0xfff5d5,0x416b35,2.4); scene.add(hemi);
-const sun=new THREE.DirectionalLight(0xffe0a0,3.2); sun.position.set(-15,25,12); sun.castShadow=true; scene.add(sun);
+const hemi=new THREE.HemisphereLight(0xfff5d5,0x416b35,2.4);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xffe0a0,3.2);sun.position.set(-15,25,12);sun.castShadow=true;scene.add(sun);
 
-const world=new THREE.Group(); scene.add(world);
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshStandardMaterial({color:0x5fa646,roughness:1}));
-ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; world.add(ground);
+const world=new THREE.Group();scene.add(world);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(110,120),new THREE.MeshStandardMaterial({color:0x5fa646,roughness:1}));
+ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;world.add(ground);
 
-const path=new THREE.Mesh(new THREE.PlaneGeometry(7,70),new THREE.MeshStandardMaterial({color:0xb9894e,roughness:1}));
-path.rotation.x=-Math.PI/2; path.position.set(0,.012,-18); world.add(path);
+// Camino estrecho: el bosque lo encierra, pero permanece completamente libre para caminar.
+const path=new THREE.Mesh(new THREE.PlaneGeometry(5.2,105),new THREE.MeshStandardMaterial({color:0xb9894e,roughness:1}));
+path.rotation.x=-Math.PI/2;path.position.set(0,.012,-43);world.add(path);
 
-function box(w,h,d,c,x,y,z,group=world){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c,roughness:.8}));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);return m}
-function sphere(r,c,x,y,z,group=world){const m=new THREE.Mesh(new THREE.SphereGeometry(r,20,14),new THREE.MeshStandardMaterial({color:c,roughness:.75}));m.position.set(x,y,z);m.castShadow=true;group.add(m);return m}
+function box(w,h,d,c,x,y,z,group=world){
+ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c,roughness:.8}));
+ m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);return m;
+}
+function sphere(r,c,x,y,z,group=world){
+ const m=new THREE.Mesh(new THREE.SphereGeometry(r,12,9),new THREE.MeshStandardMaterial({color:c,roughness:.78}));
+ m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);return m;
+}
 
+// La granja queda MUY lejos, al fondo del recorrido.
 function makeCabin(){
- const g=new THREE.Group();g.position.set(-9,0,-30);world.add(g);
+ const g=new THREE.Group();g.position.set(-9,0,-82);world.add(g);
  box(7,4.5,5.5,0x8d5b36,0,2.25,0,g);
  const roof=new THREE.Mesh(new THREE.ConeGeometry(5.3,2.7,4),new THREE.MeshStandardMaterial({color:0x6b3e28,roughness:1}));
- roof.rotation.y=Math.PI/4;roof.position.y=5.8;roof.scale.z=1.02;roof.castShadow=true;g.add(roof);
+ roof.rotation.y=Math.PI/4;roof.position.y=5.8;roof.castShadow=true;g.add(roof);
  box(1.2,2.1,.25,0x50301f,0,.95,2.78,g);
- box(1.25,1.15,.22,0x8fd9e5,-2,2.7,2.78,g);box(1.25,1.15,.22,0x8fd9e5,2,2.7,2.78,g);
+ box(1.25,1.15,.22,0x8fd9e5,-2,2.7,2.78,g);
+ box(1.25,1.15,.22,0x8fd9e5,2,2.7,2.78,g);
  box(.55,1.8,.7,0x633724,2.1,6.1,-.2,g);
 }
 makeCabin();
 
-for(let i=0;i<70;i++){
- const x=(Math.random()-.5)*42, z=-45+Math.random()*50;
- if(Math.abs(x)<5) continue;
- const s=.5+Math.random()*1.4;
- const g=new THREE.Group();g.position.set(x,0,z);world.add(g);
- for(let j=0;j<3;j++){const h=.45+Math.random()*.55;box(.08,h,.08,0x6e9f43,(j-1)*.16,h/2,0,g)}
- if(i%3===0)sphere(.12, i%2?0xf5d64c:0xf29a8e, x*.0, .9, 0,g);
+// Árboles de bosque denso. Se evita una franja central para no bloquear el camino ni el huevo.
+function makeTree(x,z,s,variant=0){
+ const g=new THREE.Group();g.position.set(x,0,z);g.scale.setScalar(s);world.add(g);
+ const trunk=box(.42,3.2,.42,variant?0x68452c:0x755033,0,1.6,0,g);
+ trunk.rotation.z=(Math.random()-.5)*.08;
+ const leafColor=variant?0x2f7d3d:0x3c9145;
+ const leaf2=variant?0x246b35:0x31803b;
+ const a=sphere(1.45,leafColor,0,3.6,0,g);
+ a.scale.set(1.15,.85,1.05);
+ const b=sphere(1.15,leaf2,-.72,4.35,.05,g);
+ b.scale.set(1.15,.9,1.05);
+ const c=sphere(1.05,leafColor,.68,4.45,-.08,g);
+ c.scale.set(1.05,.88,1.0);
+ if(variant===2){
+   const branch=box(.18,1.6,.18,0x68452c,.75,2.7,0,g);branch.rotation.z=-.65;
+ }
+ return g;
 }
 
-for(let i=0;i<34;i++){
- const x=(Math.random()-.5)*34, z=-5-Math.random()*38;
- const h=1+Math.random()*1.2;
- const g=new THREE.Group();g.position.set(x,0,z);world.add(g);
- for(let j=0;j<5;j++){const stem=box(.045,h,.045,0x4b8d3d,(j-2)*.08,h/2,0,g);stem.rotation.z=(j-2)*.08}
+// Bosque principal a ambos lados del camino: varias capas de profundidad.
+const rows=[
+ [-7,-10,1.05], [7,-12,.95], [-9,-17,1.25], [9,-20,1.15],
+ [-6,-24,.9], [7,-27,1.35], [-10,-32,1.1], [10,-35,1.05],
+ [-7,-40,1.3], [8,-43,1.2], [-11,-48,.95], [11,-52,1.3],
+ [-7,-57,1.1], [8,-61,.95], [-12,-66,1.25], [12,-70,1.1],
+ [-8,-75,1.35], [9,-78,1.15], [-13,-84,1.05], [12,-87,1.25]
+];
+rows.forEach((r,i)=>makeTree(r[0],r[1],r[2],i%3));
+
+// Capas laterales extra para que se sienta como bosque, no como una fila de árboles.
+for(let i=0;i<46;i++){
+ const side=i%2===0?-1:1;
+ const x=side*(6.2+Math.random()*8.5);
+ const z=-7-Math.random()*79;
+ const s=.62+Math.random()*.7;
+ makeTree(x,z,s,Math.floor(Math.random()*3));
 }
 
+// Línea de árboles lejana: la granja queda escondida detrás del bosque.
+for(let i=0;i<22;i++){
+ const x=-24+i*2.25+(Math.random()-.5)*1.2;
+ const z=-91-Math.random()*7;
+ makeTree(x,z,.75+Math.random()*.55,i%3);
+}
+
+// Arbustos y flores bajos entre los árboles, sin invadir el camino.
+for(let i=0;i<90;i++){
+ const side=Math.random()<.5?-1:1;
+ const x=side*(3.1+Math.random()*13);
+ const z=-6-Math.random()*84;
+ const g=new THREE.Group();g.position.set(x,0,z);world.add(g);
+ sphere(.35+Math.random()*.35,Math.random()<.5?0x2f813c:0x4b963f,0,.3,0,g);
+ if(i%4===0)sphere(.09,i%8===0?0xf2a2b8:0xf5d64c,0,.7,0,g);
+}
+
+// Hierba alta y trigo junto al camino, pero dejando paso limpio.
+for(let i=0;i<80;i++){
+ const side=i%2?-1:1;
+ const x=side*(2.8+Math.random()*2.7);
+ const z=-5-Math.random()*82;
+ const h=.7+Math.random()*1.2;
+ const g=new THREE.Group();g.position.set(x,0,z);world.add(g);
+ for(let j=0;j<3;j++){
+   const stem=box(.035,h,.035,0x4b8d3d,(j-1)*.08,h/2,0,g);
+   stem.rotation.z=(j-1)*.08;
+ }
+}
+
+// Huevo en un claro del bosque.
 function makeEgg(){
- const g=new THREE.Group();g.position.set(0,.9,-5);g.visible=false;world.add(g);
+ const g=new THREE.Group();g.position.set(0,.9,-48);g.visible=false;world.add(g);
  const egg=new THREE.Mesh(new THREE.SphereGeometry(1.05,32,24),new THREE.MeshStandardMaterial({color:0xfffaf0,roughness:.35,emissive:0xffc94d,emissiveIntensity:.08}));
  egg.scale.set(.82,1.18,.82);egg.castShadow=true;g.add(egg);
  const glow=new THREE.PointLight(0xffd76a,0,7);g.add(glow);
- for(let i=0;i<8;i++){const p=sphere(.045,0xffd76a,(Math.random()-.5)*1.5,1.4+Math.random()*.8,(Math.random()-.5)*1.5,g);p.userData.baseY=p.position.y}
+ for(let i=0;i<8;i++){
+   const p=sphere(.045,0xffd76a,(Math.random()-.5)*1.5,1.4+Math.random()*.8,(Math.random()-.5)*1.5,g);
+   p.userData.baseY=p.position.y;
+ }
  g.userData.glow=glow;g.userData.egg=egg;return g;
 }
 const egg=makeEgg();
 
 function makeCharacter(name,color,hair){
  const g=new THREE.Group();g.visible=false;world.add(g);
- const body=box(1.0,1.5,.65,color,0,1.15,0,g);
- sphere(.62,0xffd0aa,0,2.35,0,g);sphere(.64,hair,0,2.72,-.02,g);
+ box(1.0,1.5,.65,color,0,1.15,0,g);
+ sphere(.62,0xffd0aa,0,2.35,0,g);
+ sphere(.64,hair,0,2.72,-.02,g);
  const eyeMat=new THREE.MeshStandardMaterial({color:0x355c3d});
  const e1=new THREE.Mesh(new THREE.SphereGeometry(.07,12,8),eyeMat);e1.position.set(-.2,2.4,.56);g.add(e1);
  const e2=e1.clone();e2.position.x=.2;g.add(e2);
- box(.3,.85,1.0,0x6f4a31,-.27,.35,0,g);box(.3,.85,1.0,0x6f4a31,.27,.35,0,g);
+ box(.3,.85,1.0,0x6f4a31,-.27,.35,0,g);
+ box(.3,.85,1.0,0x6f4a31,.27,.35,0,g);
  g.userData.name=name;return g;
 }
 const mike=makeCharacter('MIKE',0x777b83,0x704a35);
 const micaela=makeCharacter('MICAELA',0xd86b8d,0x9a6a3c);
-mike.position.set(-2,0,-7);micaela.position.set(2,0,-7);
 
 const dialog=document.getElementById('dialogue'),speaker=document.getElementById('speaker'),text=document.getElementById('text');
 const end=document.getElementById('end');
@@ -107,32 +175,70 @@ function showDialog(s,tx){speaker.textContent=s;text.textContent=tx;dialog.style
 function hideDialog(){dialog.style.opacity=0}
 function setCamera(x,y,z,lx,ly,lz){camera.position.set(x,y,z);camera.lookAt(lx,ly,lz)}
 
+function walkCharacters(t){
+ // Mike y Micaela recorren juntos el bosque desde el inicio de la cinemática.
+ // Caminan por el mismo tramo del sendero y se detienen al llegar al claro.
+ const startZ=13,endZ=-45;
+ const p=clamp((t-1.0)/25.5,0,1);
+ const z=smooth(startZ,endZ,p);
+ mike.visible=t>=0.8;
+ micaela.visible=t>=0.8;
+ mike.position.set(-1.05,.02,z);
+ micaela.position.set(1.05,.02,z+.15);
+ // Pequeño balanceo de piernas/brazos para dar sensación de caminata.
+ const step=Math.sin(t*7.5);
+ mike.children.forEach((o,i)=>{if(i===3||i===4)o.rotation.x=step*.16});
+ micaela.children.forEach((o,i)=>{if(i===3||i===4)o.rotation.x=-step*.16});
+ if(t>27){mike.position.x=-1.55;micaela.position.x=1.55;}
+}
+
 function timeline(now){
  if(done)return;
  const t=(now-t0)/1000;
  hideDialog();
+ walkCharacters(t);
 
- // ETAPA 1 0-5: valle, granja, sin personajes
- if(t<5){const p=t/5;setCamera(12,13,25-smooth(0,8,p),0,2,-20);mike.visible=false;micaela.visible=false;egg.visible=false}
- // ETAPA 2 5-12: camino
- else if(t<12){const p=(t-5)/7;setCamera(4,3.2,17-smooth(0,15,p),0,1,-20);mike.visible=false;micaela.visible=false;egg.visible=false}
- // ETAPA 3 12-18: desvío y revelación
- else if(t<18){const p=(t-12)/6;setCamera(4-smooth(0,4,p),3-smooth(0,1,p),2-smooth(0,2,p),0,1,-5);mike.visible=false;micaela.visible=false;egg.visible=p>.45}
- // ETAPA 4 18-25: huevo protagonista
- else if(t<25){const p=(t-18)/7;setCamera(0,2.8,3.8,0,1,-5);egg.visible=true;mike.visible=false;micaela.visible=false;
+ // 0-5: comienza la caminata. Bosque domina la imagen; granja muy lejos.
+ if(t<5){
+   const p=t/5;
+   setCamera(7,5.2,20-smooth(0,7,p),0,2,-8);
+   egg.visible=false;
+ }
+ // 5-12: cámara acompaña a Mike y Micaela por el sendero cerrado por árboles.
+ else if(t<12){
+   const p=(t-5)/7;
+   const z=13-smooth(0,17,p);
+   setCamera(4.2,3.1,z+7,0,1.7,z-8);
+   egg.visible=false;
+ }
+ // 12-18: continúa la caminata y aparece poco a poco el claro.
+ else if(t<18){
+   const p=(t-12)/6;
+   const z=-4-smooth(0,15,p);
+   setCamera(4-smooth(0,2.5,p),3.0,z+6,0,1.5,z-7);
+   egg.visible=p>.72;
+ }
+ // 18-25: llegan al huevo; ellos siguen siendo parte de la escena.
+ else if(t<25){
+   const p=(t-18)/7;
+   egg.visible=true;
+   setCamera(2.7-smooth(0,2.7,p),2.8,0.5-smooth(0,1.2,p),0,1.25,-48);
    egg.userData.glow.intensity=1.1+Math.sin(t*3)*.35;
    egg.userData.egg.emissiveIntensity=.12+Math.sin(t*2.2)*.05;
-   egg.children.slice(1).forEach((p,i)=>{if(p.userData.baseY)p.position.y=p.userData.baseY+Math.sin(t*1.7+i)*.18})
+   egg.children.slice(1).forEach((p,i)=>{if(p.userData.baseY)p.position.y=p.userData.baseY+Math.sin(t*1.7+i)*.18});
  }
- // ETAPA 5 25-30: personajes aparecen SOLO ahora
- else if(t<30){const p=(t-25)/5;egg.visible=true;mike.visible=true;micaela.visible=true;
-   mike.position.x=smooth(-4,-2,p);micaela.position.x=smooth(4,2,p);
-   mike.position.z=micaela.position.z=-7+smooth(0,2,p);
-   setCamera(0,3.1,5.5,0,1.7,-6);
+ // 25-30: se acercan y se colocan a ambos lados del huevo.
+ else if(t<30){
+   const p=(t-25)/5;egg.visible=true;
+   mike.position.set(smooth(-3.4,-1.7,p),.02,smooth(-43,-46,p));
+   micaela.position.set(smooth(3.4,1.7,p),.02,smooth(-43,-46,p));
+   setCamera(0,3.1,1.8,0,1.6,-48);
+   egg.userData.glow.intensity=1.2;
  }
- // ETAPA 6 30-45: diálogo
- else if(t<45){egg.visible=true;mike.visible=true;micaela.visible=true;
-   setCamera(0,3.1,5.5,0,1.7,-6);
+ // 30-45: diálogo en el claro.
+ else if(t<45){
+   egg.visible=true;
+   setCamera(0,3.1,1.8,0,1.7,-48);
    const q=t-30;
    if(q<3.4)showDialog('MICAELA','¿Qué hacemos aquí, Mike?');
    else if(q<6.5)showDialog('MIKE','No sé…');
@@ -143,7 +249,6 @@ function timeline(now){
    else showDialog('MICAELA','No lo sé… pero vamos a averiguarlo.');
    egg.userData.glow.intensity=1.1+Math.sin(t*3)*.35;
  }
- // ETAPA 7
  else {end.style.opacity=1;end.style.pointerEvents='auto';done=true}
 }
 
@@ -154,12 +259,11 @@ addEventListener('resize',resize);resize();requestAnimationFrame(animate);
 document.getElementById('skip').onclick=()=>{t0=performance.now()-45000;document.getElementById('skip').style.display='none'};
 document.getElementById('continue').onclick=()=>location.href='rig/index.html';
 
-// Ambiente suave sin archivos externos: viento/aves sintéticos y muy discretos.
 let audioStarted=false;
 function ambient(){
  if(audioStarted)return;audioStarted=true;
  try{
-  const A=new AudioContext(), master=A.createGain();master.gain.value=.025;master.connect(A.destination);
+  const A=new AudioContext(),master=A.createGain();master.gain.value=.025;master.connect(A.destination);
   const osc=A.createOscillator(),gain=A.createGain();osc.type='sine';osc.frequency.value=180;gain.gain.value=.12;osc.connect(gain);gain.connect(master);osc.start();
  }catch(e){}
 }
