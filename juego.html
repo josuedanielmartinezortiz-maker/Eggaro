@@ -31,9 +31,10 @@
   <button id="mike">Mike</button>
   <button id="micaela">Micaela</button>
 </div>
+<div id="farmHud" class="panel" style="position:fixed;left:12px;bottom:18px;z-index:8;display:none">🌱 Parcela: libre</div>
 <div id="actions">
   <button data-key="a">◀</button><button data-key="w">▲</button><button data-key="d">▶</button>
-  <button data-key="s">▼</button><button id="act">🌳 PROBAR ÁRBOL</button>
+  <button data-key="s">▼</button><button id="act">🌱 CULTIVAR</button>
 </div>
 
 <script type="importmap">
@@ -95,6 +96,8 @@ if(!['Mike','Micaela'].includes(selected))selected='Micaela';
 
 const playerState={x:0,z:8,speed:4};
 const treeState={resistance:100,maxResistance:100,alive:true};
+const farmHud=document.getElementById('farmHud');
+const crop={stage:0,planted:false,ready:false,water:0};
 const keys={};
 
 function setStatus(t){status.textContent=t}
@@ -170,7 +173,24 @@ function testTree(){
  }
 }
 
-document.getElementById('act').onclick=testTree;
+function farmAction(){
+ if(!player)return;
+ const x=Math.round(playerState.x),z=Math.round(playerState.z);
+ const farmX=Math.abs(x)<5 && Math.abs(z-8)<5;
+ if(!farmX){setStatus('🌱 Ve a la parcela para cultivar');return}
+ if(!crop.planted){
+  crop.planted=true;crop.stage=1;crop.water=0;
+  farmHud.style.display='block';farmHud.textContent='🌱 Semilla plantada · riégala';
+  setStatus('🌱 ¡Semilla plantada!');
+ }else if(!crop.ready){
+  crop.water++;
+  if(crop.water>=1){crop.stage=2;crop.ready=true;farmHud.textContent='🌾 ¡Cultivo listo para cosechar!';setStatus('💧 Cultivo regado');}
+ }else{
+  crop.planted=false;crop.ready=false;crop.stage=0;crop.water=0;
+  farmHud.textContent='🌱 Parcela libre';setStatus('🌾 ¡Cosecha recogida!');
+ }
+}
+document.getElementById('act').onclick=farmAction;
 addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key===' ')testTree()});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 for(const b of document.querySelectorAll('[data-key]')){
@@ -213,6 +233,8 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
  try{
   await loadTree();
   await loadCharacter();
+  farmHud.style.display='block';
+  farmHud.textContent='🌱 Parcela lista · CULTIVAR';
   loading.style.display='none';
   setStatus('🌳 Árbol de prueba · resistencia 100');
  }catch(e){
