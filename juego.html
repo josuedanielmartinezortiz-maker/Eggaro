@@ -15,6 +15,8 @@
 #actions{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:8;display:grid;grid-template-columns:repeat(3,62px);gap:8px}
 #actions button{font-size:19px;padding:13px 8px}
 #actions #act{grid-column:2/4;width:132px;font-size:14px}
+#cameraMode{position:fixed;right:12px;bottom:18px;z-index:9;border:0;border-radius:14px;padding:11px 14px;background:#fff;color:#18351b;font-weight:1000;box-shadow:0 4px 0 #7b9d72;touch-action:manipulation}
+#cameraMode small{display:block;opacity:.65;font-size:10px}
 #loading{position:fixed;inset:0;display:grid;place-items:center;background:#78c95a;z-index:20;color:#fff;font-size:20px;font-weight:900}
 .small{opacity:.75;font-size:12px}
 @media(min-width:800px){#actions{display:none}}
@@ -32,6 +34,7 @@
   <button id="micaela">Micaela</button>
 </div>
 <div id="farmHud" class="panel" style="position:fixed;left:12px;bottom:18px;z-index:8;display:none">🌱 Parcela: libre</div>
+<button id="cameraMode">👤 TERCERA</button>
 <div id="actions">
   <button data-key="a">◀</button><button data-key="w">▲</button><button data-key="d">▶</button>
   <button data-key="s">▼</button><button id="act">🌱 CULTIVAR</button>
@@ -54,8 +57,17 @@ const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x86cf63);
 scene.fog=new THREE.Fog(0x86cf63,35,110);
 
-const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,300);
-camera.position.set(0,7,12);
+const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,300);
+camera.position.set(0,3.5,7);
+let cameraMode='third';
+const cameraTarget=new THREE.Vector3();
+const cameraDesired=new THREE.Vector3();
+const cameraOffset=new THREE.Vector3();
+const cameraModeButton=document.getElementById('cameraMode');
+cameraModeButton.onclick=()=>{
+ cameraMode=cameraMode==='third'?'first':'third';
+ cameraModeButton.textContent=cameraMode==='third'?'👤 TERCERA':'👁️ PRIMERA';
+};
 
 const renderer=new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
@@ -285,6 +297,7 @@ function move(dt){
  }
  stumbleCooldown=Math.max(0,stumbleCooldown-dt);
  player.position.x=playerState.x;player.position.z=playerState.z;
+ if(Math.abs(x)+Math.abs(z)>0) player.rotation.y=Math.atan2(x,z);
 }
 
 let last=performance.now();
@@ -293,10 +306,19 @@ function animate(now){
  move(dt);
  if(playerMixer)playerMixer.update(dt);
  if(player){
-  const target=new THREE.Vector3(player.position.x,player.position.y+2.2,player.position.z);
-  const desired=new THREE.Vector3(player.position.x,6.5,player.position.z+11);
-  camera.position.lerp(desired,1-Math.pow(.0001,dt));
-  camera.lookAt(target);
+  if(cameraMode==='third'){
+   // Tercera persona: cámara detrás y ligeramente elevada, siguiendo la orientación del personaje.
+   cameraOffset.set(0,3.4,6.8).applyAxisAngle(new THREE.Vector3(0,1,0),player.rotation.y);
+   cameraDesired.copy(player.position).add(cameraOffset);
+   cameraTarget.set(player.position.x,player.position.y+1.35,player.position.z);
+  }else{
+   // Primera persona: altura de ojos, sin mostrar el propio modelo desde dentro.
+   cameraDesired.set(player.position.x,player.position.y+2.15,player.position.z);
+   const forward=new THREE.Vector3(0,0,-1).applyAxisAngle(new THREE.Vector3(0,1,0),player.rotation.y);
+   cameraTarget.copy(cameraDesired).add(forward.multiplyScalar(8));
+  }
+  camera.position.lerp(cameraDesired,1-Math.pow(.00005,dt));
+  camera.lookAt(cameraTarget);
  }
  renderer.render(scene,camera);
  requestAnimationFrame(animate);
