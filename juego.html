@@ -74,17 +74,23 @@ const characterLabel=document.getElementById('character');
 const inventory=document.getElementById('inventory');
 const inventoryGrid=document.getElementById('inventoryGrid');
 const inventoryItems=[
- {id:'semillas',icon:'🌱',name:'Semillas',qty:5},
- {id:'madera',icon:'🪵',name:'Madera',qty:0},
- {id:'huevo',icon:'🥚',name:'Huevos',qty:0},
- {id:'cosecha',icon:'🌾',name:'Cosechas',qty:0},
- {id:'comida',icon:'🍎',name:'Comida',qty:0},
- {id:'dinero',icon:'🪙',name:'GamerCoins',qty:0}
+ {id:'pasto',icon:'🌿',name:'Pasto',qty:1},
+ {id:'madera',icon:'🪵',name:'Madera',qty:1},
+ {id:'huevo',icon:'🥚',name:'Huevo',qty:1},
+ {id:'semillas',icon:'🌱',name:'Semillas',qty:1},
+ {id:'trigo',icon:'🌾',name:'Trigo',qty:1},
+ {id:'manzana',icon:'🍎',name:'Manzana',qty:1},
+ {id:'piedra',icon:'🪨',name:'Piedra',qty:1},
+ {id:'tierra',icon:'🟫',name:'Tierra',qty:1}
 ];
+const mochila={slots:8,capacity:10};
 function renderInventory(){
- inventoryGrid.innerHTML=inventoryItems.map(i=>'<div class="invItem"><span>'+i.icon+'</span>'+i.name+'<br>'+i.qty+'</div>').join('');
+ inventoryGrid.innerHTML=inventoryItems.map(i=>'<div class="invItem"><span>'+i.icon+'</span>'+i.name+'<br>x'+i.qty+'</div>').join('');
 }
 document.getElementById('inventoryBtn').onclick=()=>{renderInventory();inventory.classList.add('open')};
+document.getElementById('closeInventory').onclick=()=>inventory.classList.remove('open');
+inventory.addEventListener('pointerdown',e=>{if(e.target===inventory)inventory.classList.remove('open')});
+renderInventory();inventory.classList.add('open')};
 document.getElementById('closeInventory').onclick=()=>inventory.classList.remove('open');
 inventory.addEventListener('pointerdown',e=>{if(e.target===inventory)inventory.classList.remove('open')});
 renderInventory();
