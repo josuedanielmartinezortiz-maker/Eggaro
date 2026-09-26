@@ -89,7 +89,7 @@ const MODELS={
  Micaela:'./assets/characters/micaela-optimized.glb'
 };
 
-let player,tree;
+let player,tree,playerMixer,playerAnimations=[];
 let selected=localStorage.getItem('gamerpro_personaje')||new URLSearchParams(location.search).get('personaje')||'Micaela';
 if(!['Mike','Micaela'].includes(selected))selected='Micaela';
 
@@ -115,20 +115,42 @@ async function loadModel(path){
 }
 
 async function loadCharacter(){
- if(player)scene.remove(player);
+ if(player){scene.remove(player);player=null;playerMixer=null;}
  try{
-  player=await loadModel(MODELS[selected]);
-  player.position.set(playerState.x,0,playerState.z);
-  player.scale.setScalar(1.5);
+  const gltf=await loader.loadAsync(MODELS[selected]);
+  player=gltf.scene;
+  playerAnimations=gltf.animations||[];
+  player.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=true;}});
+  const box=new THREE.Box3().setFromObject(player);
+  const size=box.getSize(new THREE.Vector3());
+  const center=box.getCenter(new THREE.Vector3());
+  const height=Math.max(size.y,0.001);
+  const targetHeight=2.6;
+  const s=targetHeight/height;
+  player.scale.setScalar(s);
+  player.position.set(playerState.x,-box.min.y*s,playerState.z);
+  player.position.x-=center.x*s;
+  player.position.z-=center.z*s;
   scene.add(player);
+  if(playerAnimations.length){
+    playerMixer=new THREE.AnimationMixer(player);
+    const idle=playerAnimations.find(a=>/idle|reposo|stand/i.test(a.name))||playerAnimations[0];
+    if(idle)playerMixer.clipAction(idle).reset().play();
+  }
   characterLabel.textContent='🐔 Selección: '+selected;
  }catch(e){console.error('[EGGARO] Error personaje:',e);setStatus('⚠️ No se pudo cargar '+selected)}
 }
 
 async function loadTree(){
  tree=await loadModel(MODELS.treeA);
- tree.position.set(0,0,0);
- tree.scale.setScalar(2.2);
+ tree.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=true;}});
+ const box=new THREE.Box3().setFromObject(tree);
+ const size=box.getSize(new THREE.Vector3());
+ const center=box.getCenter(new THREE.Vector3());
+ const height=Math.max(size.y,0.001);
+ const s=6/height;
+ tree.scale.setScalar(s);
+ tree.position.set(-center.x*s,-box.min.y*s,-center.z*s);
  scene.add(tree);
 }
 
@@ -175,10 +197,11 @@ let last=performance.now();
 function animate(now){
  const dt=Math.min((now-last)/1000,.05);last=now;
  move(dt);
+ if(playerMixer)playerMixer.update(dt);
  if(player){
   const target=new THREE.Vector3(player.position.x,player.position.y+2.2,player.position.z);
   const desired=new THREE.Vector3(player.position.x,6.5,player.position.z+11);
-  camera.position.lerp(desired,1-Math.pow(.001,dt));
+  camera.position.lerp(desired,1-Math.pow(.0001,dt));
   camera.lookAt(target);
  }
  renderer.render(scene,camera);
