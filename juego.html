@@ -18,7 +18,7 @@
 #actions button{font-size:18px;padding:13px 8px}
 #actions button{border:0;border-radius:14px;background:#ffd34f;color:#50360a;font-weight:1000;box-shadow:0 4px 0 #a56e15;touch-action:manipulation}
 #actions #act{grid-column:1/3;width:124px;font-size:14px}
-#actions #cameraMode{grid-column:1/3;width:124px}
+#actions /* camera is controlled by dragging the scene */\n#cameraMode{grid-column:1/3;width:124px}
 #cameraMode{position:fixed;right:12px;bottom:18px;z-index:9;border:0;border-radius:14px;padding:11px 14px;background:#fff;color:#18351b;font-weight:1000;box-shadow:0 4px 0 #7b9d72;touch-action:manipulation}
 #cameraMode small{display:block;opacity:.65;font-size:10px}
 #inventoryBtn{position:fixed;top:18px;right:18px;z-index:10;border:0;border-radius:14px;padding:11px 14px;background:#fff;color:#18351b;font-weight:1000;box-shadow:0 4px 0 #7b9d72}
@@ -56,7 +56,7 @@
 <div id="joystick"><button id="stick"></button></div>
 <div id="actions">
   <button id="act">🤲 INTERACTUAR</button>
-  <button id="cameraMode">👤 TERCERA</button>
+  
 </div>
 
 <script type="importmap">
@@ -98,15 +98,25 @@ scene.fog=new THREE.Fog(0x86cf63,35,110);
 
 const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,300);
 camera.position.set(0,3.5,7);
-let cameraMode='third';
 const cameraTarget=new THREE.Vector3();
 const cameraDesired=new THREE.Vector3();
 const cameraOffset=new THREE.Vector3();
-const cameraModeButton=document.getElementById('cameraMode');
-cameraModeButton.onclick=()=>{
- cameraMode=cameraMode==='third'?'first':'third';
- cameraModeButton.textContent=cameraMode==='third'?'👤 TERCERA':'👁️ PRIMERA';
-};
+let cameraYaw=0;
+let cameraPitch=0.72;
+let cameraTouchId=null;
+let cameraLastX=0;
+let cameraLastY=0;
+renderer.domElement.addEventListener('pointerdown',e=>{
+ if(e.clientX<innerWidth*.55 && e.clientY>innerHeight*.25){cameraTouchId=e.pointerId;cameraLastX=e.clientX;cameraLastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId);}
+});
+renderer.domElement.addEventListener('pointermove',e=>{
+ if(e.pointerId!==cameraTouchId)return;
+ cameraYaw-=(e.clientX-cameraLastX)*0.008;
+ cameraPitch=Math.max(0.38,Math.min(1.12,cameraPitch+(e.clientY-cameraLastY)*0.005));
+ cameraLastX=e.clientX;cameraLastY=e.clientY;
+});
+renderer.domElement.addEventListener('pointerup',e=>{if(e.pointerId===cameraTouchId)cameraTouchId=null;});
+renderer.domElement.addEventListener('pointercancel',e=>{if(e.pointerId===cameraTouchId)cameraTouchId=null;});
 
 const renderer=new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
