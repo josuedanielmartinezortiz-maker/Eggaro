@@ -101,23 +101,35 @@ const farmHud=document.getElementById('farmHud');
 const crop={stage:0,planted:false,ready:false,water:0};
 function makeHighGrass(){
  const g=new THREE.Group();
- const mat=new THREE.MeshStandardMaterial({color:0x4f9b32,roughness:1,side:THREE.DoubleSide});
+ // Hierba alta 3D optimizada: instancias reales para evitar cientos de objetos individuales.
+ const geo=new THREE.ConeGeometry(.11,1.25,5);
+ geo.translate(0,.625,0);
+ const mat=new THREE.MeshStandardMaterial({color:0x4f9b32,roughness:1});
+ const count=950;
+ const grass=new THREE.InstancedMesh(geo,mat,count);
+ grass.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+ const dummy=new THREE.Object3D();
  let seed=918273;
  const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
- for(let x=-28;x<=28;x+=1.15){
-  for(let z=-30;z<=30;z+=1.15){
-   if(Math.abs(x)<5.2) continue;
-   if(Math.abs(x)<5.2 && Math.abs(z-8)<5.2) continue;
-   if(rand()<0.72){
-    const blade=new THREE.Mesh(new THREE.ConeGeometry(.09,.8+rand()*.55,4),mat);
-    blade.position.set(x+(rand()-.5)*.45,.42,z+(rand()-.5)*.45);
-    blade.rotation.y=rand()*Math.PI;
-    blade.scale.x=.55+rand()*.45;
-    g.add(blade);
-   }
-  }
+ let i=0;
+ while(i<count){
+  const x=-28+rand()*56;
+  const z=-30+rand()*60;
+  // Dejar libre el camino y la parcela inicial.
+  if(Math.abs(x)<5.2) continue;
+  if(Math.abs(x)<5.2 && Math.abs(z-8)<5.2) continue;
+  dummy.position.set(x,.02,z);
+  dummy.scale.set(.7+rand()*.8,.75+rand()*1.25,.7+rand()*.8);
+  dummy.rotation.y=rand()*Math.PI;
+  dummy.updateMatrix();
+  grass.setMatrixAt(i++,dummy.matrix);
  }
- scene.add(g); return g;
+ grass.instanceMatrix.needsUpdate=true;
+ grass.castShadow=false;
+ grass.receiveShadow=true;
+ g.add(grass);
+ scene.add(g);
+ return g;
 }
 
 function makeFarm(){
