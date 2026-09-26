@@ -12,9 +12,13 @@
 #select{position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:8;display:flex;gap:7px}
 #select button,#actions button{border:0;border-radius:14px;padding:11px 14px;background:#ffd34f;color:#50360a;font-weight:1000;box-shadow:0 4px 0 #a56e15;touch-action:manipulation}
 #select button.active{background:#fff}
-#actions{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:8;display:grid;grid-template-columns:repeat(3,62px);gap:8px}
-#actions button{font-size:19px;padding:13px 8px}
-#actions #act{grid-column:2/4;width:132px;font-size:14px}
+#joystick{position:fixed;left:22px;bottom:22px;width:132px;height:132px;border-radius:50%;background:#10251d88;border:2px solid #ffffff55;z-index:9;touch-action:none}
+#stick{position:absolute;left:43px;top:43px;width:46px;height:46px;border-radius:50%;background:#ffd34f;border:0;box-shadow:0 4px 0 #a56e15}
+#actions{position:fixed;right:18px;bottom:22px;z-index:9;display:grid;grid-template-columns:repeat(2,58px);gap:8px}
+#actions button{font-size:18px;padding:13px 8px}
+#actions button{border:0;border-radius:14px;background:#ffd34f;color:#50360a;font-weight:1000;box-shadow:0 4px 0 #a56e15;touch-action:manipulation}
+#actions #act{grid-column:1/3;width:124px;font-size:14px}
+#actions #cameraMode{grid-column:1/3;width:124px}
 #cameraMode{position:fixed;right:12px;bottom:18px;z-index:9;border:0;border-radius:14px;padding:11px 14px;background:#fff;color:#18351b;font-weight:1000;box-shadow:0 4px 0 #7b9d72;touch-action:manipulation}
 #cameraMode small{display:block;opacity:.65;font-size:10px}
 #loading{position:fixed;inset:0;display:grid;place-items:center;background:#78c95a;z-index:20;color:#fff;font-size:20px;font-weight:900}
@@ -34,10 +38,10 @@
   <button id="micaela">Micaela</button>
 </div>
 <div id="farmHud" class="panel" style="position:fixed;left:12px;bottom:18px;z-index:8;display:none">🌱 Parcela: libre</div>
-<button id="cameraMode">👤 TERCERA</button>
+<div id="joystick"><button id="stick"></button></div>
 <div id="actions">
-  <button data-key="a">◀</button><button data-key="w">▲</button><button data-key="d">▶</button>
-  <button data-key="s">▼</button><button id="act">🌱 CULTIVAR</button>
+  <button id="act">🌱 CULTIVAR</button>
+  <button id="cameraMode">👤 TERCERA</button>
 </div>
 
 <script type="importmap">
@@ -171,6 +175,19 @@ function updateCropVisual(){
  cropVisual=g;farmPlot.add(g);
 }
 const keys={};
+let joyPointer=null;
+const joy=document.getElementById('joystick'),stick=document.getElementById('stick');
+function updateJoystick(e){
+ const r=joy.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+ let dx=e.clientX-cx,dy=e.clientY-cy,max=43,d=Math.hypot(dx,dy);
+ if(d>max){dx=dx/d*max;dy=dy/d*max}
+ stick.style.transform=`translate(${dx}px,${dy}px)`;
+ keys.a=dx<-12;keys.d=dx>12;keys.w=dy<-12;keys.s=dy>12;
+}
+joy.addEventListener('pointerdown',e=>{joyPointer=e.pointerId;joy.setPointerCapture(e.pointerId);updateJoystick(e)});
+joy.addEventListener('pointermove',e=>{if(e.pointerId===joyPointer)updateJoystick(e)});
+function resetJoystick(){joyPointer=null;stick.style.transform='translate(0,0)';keys.a=keys.d=keys.w=keys.s=false}
+joy.addEventListener('pointerup',resetJoystick);joy.addEventListener('pointercancel',resetJoystick);
 
 function setStatus(t){status.textContent=t}
 function setSelection(name){selected=name;localStorage.setItem('gamerpro_personaje',name);characterLabel.textContent='🐔 Selección: '+name;document.getElementById(name.toLowerCase()).classList.add('active');for(const n of ['mike','micaela'])if(n!==name.toLowerCase())document.getElementById(n).classList.remove('active');loadCharacter()}
