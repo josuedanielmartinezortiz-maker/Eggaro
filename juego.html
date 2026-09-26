@@ -42,6 +42,7 @@
 <script type="module">
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
 
 const root=document.getElementById('game');
 const loading=document.getElementById('loading');
@@ -78,6 +79,9 @@ const path=new THREE.Mesh(
 path.rotation.x=-Math.PI/2;path.position.y=.01;scene.add(path);
 
 const loader=new GLTFLoader();
+const draco=new DRACOLoader();
+draco.setDecoderPath('https://unpkg.com/three@0.180.0/examples/jsm/libs/draco/');
+loader.setDRACOLoader(draco);
 const MODELS={
  treeA:'./assets/trees/eggaro-tree-a.glb',
  treeB:'./assets/trees/eggaro-tree-b.glb',
@@ -101,7 +105,10 @@ characterLabel.textContent='🐔 Selección: '+selected;
 document.getElementById(selected.toLowerCase()).classList.add('active');
 
 async function loadModel(path){
- const gltf=await loader.loadAsync(path);
+ console.log('[EGGARO] Cargando GLB:',path);
+ const gltf=await loader.loadAsync(path, progress=>{
+  if(progress.total) console.log('[EGGARO]',Math.round(progress.loaded/progress.total*100)+'%',path);
+ });
  const obj=gltf.scene;
  obj.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
  return obj;
@@ -115,7 +122,7 @@ async function loadCharacter(){
   player.scale.setScalar(1.5);
   scene.add(player);
   characterLabel.textContent='🐔 Selección: '+selected;
- }catch(e){setStatus('⚠️ No se pudo cargar '+selected)}
+ }catch(e){console.error('[EGGARO] Error personaje:',e);setStatus('⚠️ No se pudo cargar '+selected)}
 }
 
 async function loadTree(){
