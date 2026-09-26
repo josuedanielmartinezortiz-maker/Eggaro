@@ -91,6 +91,7 @@ const MODELS={
 };
 
 let player,tree,playerMixer,playerAnimations=[];
+let farmPlot,cropVisual;
 let selected=localStorage.getItem('gamerpro_personaje')||new URLSearchParams(location.search).get('personaje')||'Micaela';
 if(!['Mike','Micaela'].includes(selected))selected='Micaela';
 
@@ -98,6 +99,32 @@ const playerState={x:0,z:8,speed:4};
 const treeState={resistance:100,maxResistance:100,alive:true};
 const farmHud=document.getElementById('farmHud');
 const crop={stage:0,planted:false,ready:false,water:0};
+function makeFarm(){
+ const g=new THREE.Group();
+ const soil=new THREE.Mesh(new THREE.BoxGeometry(8,.18,7),new THREE.MeshStandardMaterial({color:0x6b472d,roughness:1}));
+ soil.position.set(0,.09,8);soil.receiveShadow=true;g.add(soil);
+ for(let i=-2.5;i<=2.5;i+=1.25){
+  const row=new THREE.Mesh(new THREE.BoxGeometry(.18,.04,6.2),new THREE.MeshStandardMaterial({color:0x4a301f}));
+  row.position.set(i,.2,8);g.add(row);
+ }
+ g.visible=true;scene.add(g);return g;
+}
+function updateCropVisual(){
+ if(!farmPlot)return;
+ if(cropVisual)farmPlot.remove(cropVisual);
+ if(!crop.planted)return;
+ const g=new THREE.Group();
+ const count=5;
+ for(let i=0;i<count;i++){
+  const stem=new THREE.Mesh(new THREE.CylinderGeometry(.035,.05,.55+crop.stage*.25,6),new THREE.MeshStandardMaterial({color:0x3c8f35}));
+  stem.position.set(-2.5+i*1.25,.5,8);g.add(stem);
+  if(crop.ready){
+   const fruit=new THREE.Mesh(new THREE.SphereGeometry(.18,10,8),new THREE.MeshStandardMaterial({color:0xffc928}));
+   fruit.position.set(-2.5+i*1.25,.85,8);g.add(fruit);
+  }
+ }
+ cropVisual=g;farmPlot.add(g);
+}
 const keys={};
 
 function setStatus(t){status.textContent=t}
@@ -144,6 +171,8 @@ async function loadCharacter(){
  }catch(e){console.error('[EGGARO] Error personaje:',e);setStatus('⚠️ No se pudo cargar '+selected)}
 }
 
+farmPlot=makeFarm();
+
 async function loadTree(){
  tree=await loadModel(MODELS.treeA);
  tree.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=true;}});
@@ -180,13 +209,14 @@ function farmAction(){
  if(!farmX){setStatus('🌱 Ve a la parcela para cultivar');return}
  if(!crop.planted){
   crop.planted=true;crop.stage=1;crop.water=0;
+  updateCropVisual();
   farmHud.style.display='block';farmHud.textContent='🌱 Semilla plantada · riégala';
   setStatus('🌱 ¡Semilla plantada!');
  }else if(!crop.ready){
   crop.water++;
-  if(crop.water>=1){crop.stage=2;crop.ready=true;farmHud.textContent='🌾 ¡Cultivo listo para cosechar!';setStatus('💧 Cultivo regado');}
+  if(crop.water>=1){crop.stage=2;crop.ready=true;updateCropVisual();farmHud.textContent='🌾 ¡Cultivo listo para cosechar!';setStatus('💧 Cultivo regado');}
  }else{
-  crop.planted=false;crop.ready=false;crop.stage=0;crop.water=0;
+  crop.planted=false;crop.ready=false;crop.stage=0;crop.water=0;updateCropVisual();
   farmHud.textContent='🌱 Parcela libre';setStatus('🌾 ¡Cosecha recogida!');
  }
 }
