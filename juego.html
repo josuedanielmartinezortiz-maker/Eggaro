@@ -91,7 +91,7 @@ const MODELS={
 };
 
 let player,tree,playerMixer,playerAnimations=[];
-let farmPlot,cropVisual;
+let farmPlot,cropVisual,highGrassGroup;
 let selected=localStorage.getItem('gamerpro_personaje')||new URLSearchParams(location.search).get('personaje')||'Micaela';
 if(!['Mike','Micaela'].includes(selected))selected='Micaela';
 
@@ -99,6 +99,27 @@ const playerState={x:0,z:8,speed:4};
 const treeState={resistance:100,maxResistance:100,alive:true};
 const farmHud=document.getElementById('farmHud');
 const crop={stage:0,planted:false,ready:false,water:0};
+function makeHighGrass(){
+ const g=new THREE.Group();
+ const mat=new THREE.MeshStandardMaterial({color:0x4f9b32,roughness:1,side:THREE.DoubleSide});
+ let seed=918273;
+ const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+ for(let x=-28;x<=28;x+=1.15){
+  for(let z=-30;z<=30;z+=1.15){
+   if(Math.abs(x)<5.2) continue;
+   if(Math.abs(x)<5.2 && Math.abs(z-8)<5.2) continue;
+   if(rand()<0.72){
+    const blade=new THREE.Mesh(new THREE.ConeGeometry(.09,.8+rand()*.55,4),mat);
+    blade.position.set(x+(rand()-.5)*.45,.42,z+(rand()-.5)*.45);
+    blade.rotation.y=rand()*Math.PI;
+    blade.scale.x=.55+rand()*.45;
+    g.add(blade);
+   }
+  }
+ }
+ scene.add(g); return g;
+}
+
 function makeFarm(){
  const g=new THREE.Group();
  const soil=new THREE.Mesh(new THREE.BoxGeometry(8,.18,7),new THREE.MeshStandardMaterial({color:0x6b472d,roughness:1}));
@@ -172,6 +193,7 @@ async function loadCharacter(){
 }
 
 farmPlot=makeFarm();
+highGrassGroup=makeHighGrass();
 
 async function loadTree(){
  tree=await loadModel(MODELS.treeA);
@@ -229,6 +251,7 @@ for(const b of document.querySelectorAll('[data-key]')){
  ['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false));
 }
 
+let stumbleCooldown=0;
 function move(dt){
  if(!player)return;
  let x=0,z=0;
@@ -238,8 +261,17 @@ function move(dt){
  if(keys.s||keys.arrowdown)z++;
  if(!x&&!z)return;
  const l=Math.hypot(x,z);x/=l;z/=l;
- playerState.x+=x*playerState.speed*dt;
- playerState.z+=z*playerState.speed*dt;
+ const inHighGrass=Math.abs(playerState.x)>5.2 && Math.abs(playerState.x)<28 && Math.abs(playerState.z)<30;
+ const moveSpeed=inHighGrass?1.55:playerState.speed;
+ playerState.x+=x*moveSpeed*dt;
+ playerState.z+=z*moveSpeed*dt;
+ if(inHighGrass && stumbleCooldown<=0 && Math.random()<0.035*dt){
+  stumbleCooldown=1.1;
+  playerState.x-=x*.65;
+  playerState.z-=z*.65;
+  setStatus('🪢 ¡Te enredaste en la hierba alta!');
+ }
+ stumbleCooldown=Math.max(0,stumbleCooldown-dt);
  player.position.x=playerState.x;player.position.z=playerState.z;
 }
 
@@ -266,7 +298,7 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
   farmHud.style.display='block';
   farmHud.textContent='🌱 Parcela lista · CULTIVAR';
   loading.style.display='none';
-  setStatus('🌳 Árbol de prueba · resistencia 100');
+  setStatus('🌾 Granja inicial · hierba alta');
  }catch(e){
   loading.textContent='⚠️ Error cargando los modelos 3D';
   console.error(e);
