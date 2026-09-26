@@ -40,7 +40,7 @@
 <div id="farmHud" class="panel" style="position:fixed;left:12px;bottom:18px;z-index:8;display:none">🌱 Parcela: libre</div>
 <div id="joystick"><button id="stick"></button></div>
 <div id="actions">
-  <button id="act">🌱 CULTIVAR</button>
+  <button id="act">🤲 INTERACTUAR</button>
   <button id="cameraMode">👤 TERCERA</button>
 </div>
 
@@ -113,6 +113,7 @@ if(!['Mike','Micaela'].includes(selected))selected='Micaela';
 
 const playerState={x:0,z:8,speed:4};
 const treeState={resistance:100,maxResistance:100,alive:true};
+let nearbyObject='';
 const farmHud=document.getElementById('farmHud');
 const crop={stage:0,planted:false,ready:false,water:0};
 function makeHighGrass(){
@@ -249,6 +250,18 @@ async function loadTree(){
  scene.add(tree);
 }
 
+function getNearbyObject(){
+ if(treeState.alive && Math.hypot(playerState.x,playerState.z)<4.5)return 'tree';
+ const farmX=Math.abs(playerState.x)<5 && Math.abs(playerState.z-8)<5;
+ if(farmX)return 'farm';
+ return '';
+}
+function updateActionButton(){
+ const obj=getNearbyObject();
+ nearbyObject=obj;
+ const labels={tree:'🪓 CORTAR',farm:'🌱 CULTIVAR','':'🤲 INTERACTUAR'};
+ document.getElementById('act').textContent=labels[obj];
+}
 function nearTree(){return treeState.alive && Math.hypot(playerState.x,playerState.z)<4.5}
 
 function testTree(){
@@ -283,7 +296,12 @@ function farmAction(){
   farmHud.textContent='🌱 Parcela libre';setStatus('🌾 ¡Cosecha recogida!');
  }
 }
-document.getElementById('act').onclick=farmAction;
+document.getElementById('act').onclick=()=>{
+ const obj=getNearbyObject();
+ if(obj==='tree')testTree();
+ else if(obj==='farm')farmAction();
+ else setStatus('🤲 Acércate a un objeto para interactuar');
+};
 addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key===' ')testTree()});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 for(const b of document.querySelectorAll('[data-key]')){
@@ -315,12 +333,14 @@ function move(dt){
  stumbleCooldown=Math.max(0,stumbleCooldown-dt);
  player.position.x=playerState.x;player.position.z=playerState.z;
  if(Math.abs(x)+Math.abs(z)>0) player.rotation.y=Math.atan2(x,z);
+ updateActionButton();
 }
 
 let last=performance.now();
 function animate(now){
  const dt=Math.min((now-last)/1000,.05);last=now;
  move(dt);
+ updateActionButton();
  if(playerMixer)playerMixer.update(dt);
  if(player){
   if(cameraMode==='third'){
