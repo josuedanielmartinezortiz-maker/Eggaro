@@ -26,6 +26,12 @@ button:active{transform:translateY(3px);box-shadow:0 2px 0 #a56e15}
 <div id="eggPanel"><div id="egg">🥚</div><h2>Huevo Noob</h2><div class="small">Noob 98% · Zombie 1% · Pollito Noob 1%</div><div id="result">Pulsa ABRIR</div><button id="hatch">🥚 ABRIR HUEVO</button><button id="closeEgg">Cerrar</button></div>
 <script>
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+
+/* EGGARO TREE MODEL SYSTEM */
+const EGGARO_TREE_MODELS={variantA:'./assets/trees/eggaro-tree-a.glb',variantB:'./assets/trees/eggaro-tree-b.glb'};
+const EGGARO_TREE_CONFIG={hitDistance:105,hitsToCut:3,woodPerTree:3,respawnMs:30000};
+window.EGGARO_TREE_MODELS=EGGARO_TREE_MODELS;
+window.EGGARO_TREE_CONFIG=EGGARO_TREE_CONFIG;
 let W=innerWidth,H=innerHeight,dpr=Math.min(devicePixelRatio||1,2);
 function resize(){W=innerWidth;H=innerHeight;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',resize);resize();
 
