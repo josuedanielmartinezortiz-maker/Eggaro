@@ -21,6 +21,15 @@
 #actions #cameraMode{grid-column:1/3;width:124px}
 #cameraMode{position:fixed;right:12px;bottom:18px;z-index:9;border:0;border-radius:14px;padding:11px 14px;background:#fff;color:#18351b;font-weight:1000;box-shadow:0 4px 0 #7b9d72;touch-action:manipulation}
 #cameraMode small{display:block;opacity:.65;font-size:10px}
+#inventoryBtn{position:fixed;top:18px;right:18px;z-index:10;border:0;border-radius:14px;padding:11px 14px;background:#fff;color:#18351b;font-weight:1000;box-shadow:0 4px 0 #7b9d72}
+#inventory{position:fixed;inset:0;z-index:30;display:none;place-items:center;background:#0008}
+#inventory.open{display:grid}
+#inventoryPanel{width:min(92vw,560px);max-height:82vh;overflow:auto;background:#17331f;color:#fff;border:2px solid #ffffff35;border-radius:20px;padding:18px;box-shadow:0 12px 40px #0008}
+#inventoryPanel h2{margin:0 0 14px}
+.invGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.invItem{background:#ffffff12;border:1px solid #ffffff20;border-radius:14px;padding:12px;text-align:center;font-weight:900}
+.invItem span{display:block;font-size:28px;margin-bottom:5px}
+#closeInventory{margin-top:14px;width:100%;border:0;border-radius:12px;padding:12px;background:#ffd34f;color:#50360a;font-weight:1000}
 #loading{position:fixed;inset:0;display:grid;place-items:center;background:#78c95a;z-index:20;color:#fff;font-size:20px;font-weight:900}
 .small{opacity:.75;font-size:12px}
 @media(min-width:800px){#actions{display:none}}
@@ -28,6 +37,12 @@
 </head>
 <body>
 <div id="game"></div>
+<button id="inventoryBtn">🎒 INVENTARIO</button>
+<div id="inventory"><div id="inventoryPanel">
+<h2>🎒 Inventario</h2>
+<div class="invGrid" id="inventoryGrid"></div>
+<button id="closeInventory">CERRAR</button>
+</div></div>
 <div id="loading">🌱 Preparando prueba 3D…</div>
 <div id="hud">
   <div class="panel" id="status">🌳 Árbol de prueba · 100 resistencia</div>
@@ -56,6 +71,23 @@ const root=document.getElementById('game');
 const loading=document.getElementById('loading');
 const status=document.getElementById('status');
 const characterLabel=document.getElementById('character');
+const inventory=document.getElementById('inventory');
+const inventoryGrid=document.getElementById('inventoryGrid');
+const inventoryItems=[
+ {id:'semillas',icon:'🌱',name:'Semillas',qty:5},
+ {id:'madera',icon:'🪵',name:'Madera',qty:0},
+ {id:'huevo',icon:'🥚',name:'Huevos',qty:0},
+ {id:'cosecha',icon:'🌾',name:'Cosechas',qty:0},
+ {id:'comida',icon:'🍎',name:'Comida',qty:0},
+ {id:'dinero',icon:'🪙',name:'GamerCoins',qty:0}
+];
+function renderInventory(){
+ inventoryGrid.innerHTML=inventoryItems.map(i=>'<div class="invItem"><span>'+i.icon+'</span>'+i.name+'<br>'+i.qty+'</div>').join('');
+}
+document.getElementById('inventoryBtn').onclick=()=>{renderInventory();inventory.classList.add('open')};
+document.getElementById('closeInventory').onclick=()=>inventory.classList.remove('open');
+inventory.addEventListener('pointerdown',e=>{if(e.target===inventory)inventory.classList.remove('open')});
+renderInventory();
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x86cf63);
