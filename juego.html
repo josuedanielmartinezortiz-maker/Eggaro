@@ -90,9 +90,6 @@ function renderInventory(){
 document.getElementById('inventoryBtn').onclick=()=>{renderInventory();inventory.classList.add('open')};
 document.getElementById('closeInventory').onclick=()=>inventory.classList.remove('open');
 inventory.addEventListener('pointerdown',e=>{if(e.target===inventory)inventory.classList.remove('open')});
-renderInventory();inventory.classList.add('open')};
-document.getElementById('closeInventory').onclick=()=>inventory.classList.remove('open');
-inventory.addEventListener('pointerdown',e=>{if(e.target===inventory)inventory.classList.remove('open')});
 renderInventory();
 
 const scene=new THREE.Scene();
