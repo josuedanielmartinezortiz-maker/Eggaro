@@ -102,7 +102,7 @@ const cameraTarget=new THREE.Vector3();
 const cameraDesired=new THREE.Vector3();
 const cameraOffset=new THREE.Vector3();
 let cameraYaw=0;
-let cameraPitch=0.72;
+let cameraPitch=0.48;
 let cameraTouchId=null;
 let cameraLastX=0;
 let cameraLastY=0;
@@ -135,8 +135,12 @@ function makeTerrain(){
  const pos=geo.attributes.position;
  for(let i=0;i<pos.count;i++){
   const x=pos.getX(i), z=pos.getY(i);
-  let h=0.12*Math.sin(x*.11)*Math.cos(z*.09);
-  h+=0.18*Math.sin((x+z)*.045);
+  let h=0.45*Math.sin(x*.11)*Math.cos(z*.09);
+  h+=0.65*Math.sin((x+z)*.045);
+  h+=0.28*Math.sin(z*.22);
+  // Colinas suaves para que el relieve tenga volumen visible desde atrás.
+  h+=0.9*Math.exp(-((x+24)*(x+24)+(z+30)*(z+30))/420);
+  h+=0.65*Math.exp(-((x-27)*(x-27)+(z+2)*(z+2))/360);
   // Suavizar la zona de la granja y caminos.
   if(Math.abs(x)<10 && z>4 && z<27) h*=.35;
   if(Math.abs(x)<4.5) h*=.25;
