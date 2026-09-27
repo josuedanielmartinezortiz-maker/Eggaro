@@ -106,6 +106,12 @@ let cameraPitch=0.72;
 let cameraTouchId=null;
 let cameraLastX=0;
 let cameraLastY=0;
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+root.appendChild(renderer.domElement);
+
 renderer.domElement.addEventListener('pointerdown',e=>{
  if(e.clientX<innerWidth*.55 && e.clientY>innerHeight*.25){cameraTouchId=e.pointerId;cameraLastX=e.clientX;cameraLastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId);}
 });
@@ -118,11 +124,6 @@ renderer.domElement.addEventListener('pointermove',e=>{
 renderer.domElement.addEventListener('pointerup',e=>{if(e.pointerId===cameraTouchId)cameraTouchId=null;});
 renderer.domElement.addEventListener('pointercancel',e=>{if(e.pointerId===cameraTouchId)cameraTouchId=null;});
 
-const renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
-renderer.setSize(innerWidth,innerHeight);
-renderer.shadowMap.enabled=true;
-root.appendChild(renderer.domElement);
 
 scene.add(new THREE.HemisphereLight(0xffffff,0x557744,2.1));
 const sun=new THREE.DirectionalLight(0xffffff,3);
