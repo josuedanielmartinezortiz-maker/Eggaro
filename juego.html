@@ -131,9 +131,25 @@ sun.position.set(12,20,8);sun.castShadow=true;scene.add(sun);
 
 const ground=new THREE.Mesh(
  new THREE.PlaneGeometry(180,180),
- new THREE.MeshStandardMaterial({color:0x67ad4d,roughness:1})
+ new THREE.MeshStandardMaterial({color:0x8fbd63,roughness:1})
 );
 ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+
+function makeZone(w,d,color,x,z,y=.012){
+ const m=new THREE.Mesh(
+  new THREE.PlaneGeometry(w,d),
+  new THREE.MeshStandardMaterial({color,roughness:1})
+ );
+ m.rotation.x=-Math.PI/2;m.position.set(x,y,z);m.receiveShadow=true;scene.add(m);return m;
+}
+// Zonas visibles del mundo: granja, pradera, bosque y pueblo.
+makeZone(34,32,0x9acb68,0,14);
+makeZone(48,34,0x72aa4f,0,-17);
+makeZone(34,32,0x658f4b,-25,-30);
+makeZone(34,32,0x7fb45a,27,-12);
+// Parcelas de tierra visibles.
+makeZone(18,12,0x765035,0,9,.025);
+makeZone(13,10,0x765035,-13,14,.025);
 
 const path=new THREE.Mesh(
  new THREE.PlaneGeometry(7,180),
