@@ -43,7 +43,7 @@
 <div class="invGrid" id="inventoryGrid"></div>
 <button id="closeInventory">CERRAR</button>
 </div></div>
-<div id="loading">🌱 Preparando prueba 3D…</div>
+<div id="loading">🌱 Preparando mundo 3D…</div>
 <div id="hud">
   <div class="panel" id="status">🌳 Árbol de prueba · 100 resistencia</div>
   <div class="panel" id="character">🐔 Selección: —</div>
@@ -112,17 +112,7 @@ renderer.setSize(innerWidth,innerHeight);
 renderer.shadowMap.enabled=true;
 root.appendChild(renderer.domElement);
 
-renderer.domElement.addEventListener('pointerdown',e=>{
- if(e.clientX<innerWidth*.55 && e.clientY>innerHeight*.25){cameraTouchId=e.pointerId;cameraLastX=e.clientX;cameraLastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId);}
-});
-renderer.domElement.addEventListener('pointermove',e=>{
- if(e.pointerId!==cameraTouchId)return;
- cameraYaw-=(e.clientX-cameraLastX)*0.008;
- cameraPitch=Math.max(0.38,Math.min(1.12,cameraPitch+(e.clientY-cameraLastY)*0.005));
- cameraLastX=e.clientX;cameraLastY=e.clientY;
-});
-renderer.domElement.addEventListener('pointerup',e=>{if(e.pointerId===cameraTouchId)cameraTouchId=null;});
-renderer.domElement.addEventListener('pointercancel',e=>{if(e.pointerId===cameraTouchId)cameraTouchId=null;});
+
 
 
 scene.add(new THREE.HemisphereLight(0xffffff,0x557744,2.1));
@@ -289,6 +279,43 @@ let selected=localStorage.getItem('gamerpro_personaje')||new URLSearchParams(loc
 if(!['Mike','Micaela'].includes(selected))selected='Micaela';
 
 const playerState={x:0,z:8,speed:4};
+
+// Colisiones del mundo: el personaje no atraviesa casas, aserradero, pozo,
+// ruinas, río ni los límites del mapa. Son invisibles y no afectan al render.
+const collisionBoxes=[];
+function addCollision(x,z,w,d,pad=.45){collisionBoxes.push({x,z,w:w+pad*2,d:d+pad*2})}
+function collidesAt(x,z){
+ const radius=.55;
+ for(const b of collisionBoxes){
+  if(x+radius>b.x-b.w/2 && x-radius<b.x+b.w/2 &&
+     z+radius>b.z-b.d/2 && z-radius<b.z+b.d/2)return true;
+ }
+ return false;
+}
+function buildWorldCollisions(){
+ // Casas.
+ addCollision(-9,31,8,6);
+ addCollision(9,31,7,6);
+ addCollision(-10,20,7,5);
+ addCollision(10,20,7,5);
+ addCollision(-1,39,12,7);
+ // Aserradero y madera.
+ addCollision(-14,7,9,6);
+ // Pozo.
+ addCollision(0,27,4.5,4.5);
+ // Campo de trigo: se puede caminar alrededor, pero no cruzarlo.
+ addCollision(-7,-15,18,12);
+ // Zona cerrada superior derecha.
+ addCollision(15,-21,7,3);
+ // Río.
+ addCollision(0,57,86,15);
+ // Bordes.
+ addCollision(-46,0,2,120);
+ addCollision(46,0,2,120);
+ addCollision(0,-48,90,2);
+ addCollision(0,48,90,2);
+}
+buildWorldCollisions();
 const treeState={resistance:100,maxResistance:100,alive:true};
 let nearbyObject='';
 const farmHud=document.getElementById('farmHud');
@@ -499,8 +526,11 @@ function move(dt){
  const l=Math.hypot(x,z);x/=l;z/=l;
  const inHighGrass=Math.abs(playerState.x)>5.2 && Math.abs(playerState.x)<28 && Math.abs(playerState.z)<30;
  const moveSpeed=inHighGrass?1.55:playerState.speed;
- playerState.x+=x*moveSpeed*dt;
- playerState.z+=z*moveSpeed*dt;
+ const nextX=playerState.x+x*moveSpeed*dt;
+ const nextZ=playerState.z+z*moveSpeed*dt;
+ // Resolver por ejes para que pueda deslizarse por las esquinas de los objetos.
+ if(!collidesAt(nextX,playerState.z))playerState.x=nextX;
+ if(!collidesAt(playerState.x,nextZ))playerState.z=nextZ;
  if(inHighGrass && stumbleCooldown<=0 && Math.random()<0.035*dt){
   stumbleCooldown=1.1;
   playerState.x-=x*.65;
@@ -520,12 +550,14 @@ function animate(now){
  updateActionButton();
  if(playerMixer)playerMixer.update(dt);
  if(player){
-  // Cámara 3D detrás del personaje, controlada arrastrando sobre el mundo.
+  // Cámara fija detrás del personaje: lo sigue suavemente y mantiene siempre
+  // una vista de tercera persona desde atrás, ligeramente elevada.
   const distance=7.2;
+  const followYaw=player.rotation.y;
   cameraOffset.set(
-   Math.sin(cameraYaw)*Math.cos(cameraPitch)*distance,
-   Math.sin(cameraPitch)*distance,
-   Math.cos(cameraYaw)*Math.cos(cameraPitch)*distance
+   Math.sin(followYaw)*Math.cos(.48)*distance,
+   Math.sin(.48)*distance,
+   Math.cos(followYaw)*Math.cos(.48)*distance
   );
   cameraDesired.copy(player.position).add(cameraOffset);
   cameraTarget.set(player.position.x,player.position.y+1.25,player.position.z);
@@ -544,7 +576,7 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
   farmHud.style.display='block';
   farmHud.textContent='🌱 Parcela lista · CULTIVAR';
   loading.style.display='none';
-  setStatus('🌾 Granja inicial · hierba alta');
+  setStatus('🌾 EGGARO · mapa 3D con colisiones');
  }catch(e){
   loading.textContent='⚠️ Error cargando los modelos 3D';
   console.error(e);
