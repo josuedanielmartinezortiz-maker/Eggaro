@@ -101,8 +101,8 @@ camera.position.set(0,3.5,7);
 const cameraTarget=new THREE.Vector3();
 const cameraDesired=new THREE.Vector3();
 const cameraOffset=new THREE.Vector3();
-let cameraYaw=0;
-let cameraPitch=0.48;
+let cameraYaw=Math.PI;
+let cameraPitch=0.38;
 let cameraDistance=7.2;
 
 const CAMERA_MIN_DISTANCE=3.2;
@@ -122,9 +122,9 @@ function cameraInputAllowed(target){
 }
 
 function rotateCamera(dx,dy){
-  cameraYaw-=dx*0.006;
+  cameraYaw+=dx*0.005;
   cameraPitch=THREE.MathUtils.clamp(
-    cameraPitch-dy*0.004,
+    cameraPitch+dy*0.003,
     CAMERA_MIN_PITCH,
     CAMERA_MAX_PITCH
   );
@@ -678,7 +678,7 @@ function animate(now){
   );
   cameraDesired.copy(player.position).add(cameraOffset);
   cameraTarget.set(player.position.x,player.position.y+1.25,player.position.z);
-  camera.position.lerp(cameraDesired,1-Math.pow(.00005,dt));
+  camera.position.lerp(cameraDesired,1-Math.pow(.000001,dt));
   camera.lookAt(cameraTarget);
  }
  renderer.render(scene,camera);
