@@ -252,6 +252,8 @@ const mapMaterial=new THREE.MeshBasicMaterial({
 const mapPlane=new THREE.Mesh(new THREE.PlaneGeometry(MAP_WIDTH,MAP_DEPTH),mapMaterial);
 mapPlane.rotation.x=-Math.PI/2;
 mapPlane.position.set(0,-0.04,0);
+// El GLB es ahora el escenario principal.
+mapPlane.visible=false;
 scene.add(mapPlane);
 
 const mapShadow=new THREE.Mesh(
@@ -273,7 +275,7 @@ const MODELS={
  Micaela:'./assets/characters/micaela-optimized.glb'
 };
 
-let player,tree,playerMixer,playerAnimations=[];
+let player,tree,farmModel,playerMixer,playerAnimations=[];
 let farmPlot,cropVisual,highGrassGroup;
 let selected=localStorage.getItem('gamerpro_personaje')||new URLSearchParams(location.search).get('personaje')||'Micaela';
 if(!['Mike','Micaela'].includes(selected))selected='Micaela';
@@ -468,8 +470,25 @@ async function loadCharacter(){
 farmPlot=makeFarm();
 highGrassGroup=makeHighGrass();
 
+async function loadFarmModel(){
+  const gltf=await loader.loadAsync('./granja.glb');
+  farmModel=gltf.scene;
+  farmModel.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+  const box=new THREE.Box3().setFromObject(farmModel);
+  const size=box.getSize(new THREE.Vector3());
+  const center=box.getCenter(new THREE.Vector3());
+  const maxSize=Math.max(size.x,size.z,0.001);
+  const scale=92/maxSize;
+  farmModel.scale.setScalar(scale);
+  farmModel.position.x=-center.x*scale;
+  farmModel.position.z=-center.z*scale;
+  farmModel.position.y=-box.min.y*scale;
+  scene.add(farmModel);
+  console.log('[EGGARO] Granja GLB cargada:',size.x,size.y,size.z);
+}
+
 async function loadTree(){
-  // El árbol del mapa ya está incluido en la imagen; no añadimos otro modelo encima.
+  // Los árboles y construcciones ya forman parte del GLB de la granja.
   tree=null;
 }
 function getNearbyObject(){
@@ -590,11 +609,12 @@ function animate(now){
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 (async()=>{
  try{
+  await loadFarmModel();
   await loadCharacter();
   farmHud.style.display='block';
   farmHud.textContent='🌱 Parcela lista · CULTIVAR';
   loading.style.display='none';
-  setStatus('🗺️ EGGARO · mapa con colisiones');
+  setStatus('🗺️ EGGARO · granja 3D + colisiones');
  }catch(e){
   loading.textContent='⚠️ Error cargando los modelos 3D';
   console.error(e);
