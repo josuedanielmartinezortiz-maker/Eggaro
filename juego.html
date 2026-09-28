@@ -156,7 +156,7 @@ function cameraInputAllowed(target){
 }
 
 function rotateCamera(dx,dy){
-  cameraYaw+=dx*0.005;
+  cameraYaw-=dx*0.005;
   cameraPitch=THREE.MathUtils.clamp(
     cameraPitch+dy*0.003,
     CAMERA_MIN_PITCH,
@@ -556,6 +556,8 @@ highGrassGroup.visible=false;
 async function loadFarmModel(){
   const gltf=await loader.loadAsync('./granja.glb');
   farmModel=gltf.scene;
+  farmModel.rotation.set(0,0,0);
+  farmModel.updateMatrixWorld(true);
   farmModel.traverse(o=>{
     if(o.isMesh){
       o.frustumCulled=true;
@@ -586,6 +588,9 @@ async function loadFarmModel(){
   );
 
   scene.add(farmModel);
+  farmModel.rotation.x=0;
+  farmModel.rotation.z=0;
+  farmModel.updateMatrixWorld(true);
   buildWorldCollisions();
   findSafeSpawn();
 
@@ -673,19 +678,14 @@ function move(dt){
  const len=Math.hypot(inputX,inputZ);
  inputX/=len;inputZ/=len;
 
- // Movimiento relativo a la cámara, estilo tercera persona.
- // Usamos la dirección REAL hacia donde mira la cámara.
- const forward=new THREE.Vector3();
- camera.getWorldDirection(forward);
- forward.y=0;
- if(forward.lengthSq()<0.0001)return;
- forward.normalize();
-
- // Derecha de la cámara.
- const rightX=forward.z;
- const rightZ=-forward.x;
- const x=rightX*inputX+forward.x*inputZ;
- const z=rightZ*inputX+forward.z*inputZ;
+ // Controles directos estilo Roblox: W avanza hacia la vista, S retrocede,
+ // A va a la izquierda y D a la derecha.
+ const forwardX=-Math.sin(cameraYaw);
+ const forwardZ=-Math.cos(cameraYaw);
+ const rightX=Math.cos(cameraYaw);
+ const rightZ=-Math.sin(cameraYaw);
+ const x=rightX*inputX+forwardX*inputZ;
+ const z=rightZ*inputX+forwardZ*inputZ;
 
  const moveSpeed=playerState.speed;
  const nextX=playerState.x+x*moveSpeed*dt;
