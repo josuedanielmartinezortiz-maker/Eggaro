@@ -556,6 +556,8 @@ highGrassGroup.visible=false;
 async function loadFarmModel(){
   const gltf=await loader.loadAsync('./granja.glb');
   farmModel=gltf.scene;
+  // El GLB puede traer la inclinación horneada en sus vértices.
+  // Primero lo dejamos sin rotación externa para medir su superficie real.
   farmModel.rotation.set(0,0,0);
   farmModel.updateMatrixWorld(true);
   farmModel.traverse(o=>{
@@ -573,6 +575,53 @@ async function loadFarmModel(){
     }
   });
 
+  // NIVELADO AUTOMÁTICO DEL GLB:
+  // Busca la malla con mayor superficie horizontal (normalmente el suelo/mapa)
+  // y calcula su normal media. Así corregimos una inclinación que ya viene
+  // grabada dentro de la geometría del archivo.
+  let groundMesh=null;
+  let groundScore=-1;
+  farmModel.traverse(o=>{
+    if(!o.isMesh || !o.geometry?.attributes?.position)return;
+    const b=new THREE.Box3().setFromObject(o);
+    const s=b.getSize(new THREE.Vector3());
+    const score=s.x*s.z*o.geometry.attributes.position.count;
+    if(score>groundScore){
+      groundScore=score;
+      groundMesh=o;
+    }
+  });
+
+  if(groundMesh){
+    const pos=groundMesh.geometry.attributes.position;
+    const idx=groundMesh.geometry.index;
+    const a=new THREE.Vector3(),b=new THREE.Vector3(),d=new THREE.Vector3();
+    const e1=new THREE.Vector3(),e2=new THREE.Vector3();
+    const normalSum=new THREE.Vector3();
+    const count=idx ? idx.count : pos.count;
+    const step=Math.max(3,Math.floor(count/6000)*3);
+    for(let i=0;i+2<count;i+=step){
+      const ia=idx?idx.getX(i):i;
+      const ib=idx?idx.getX(i+1):i+1;
+      const ic=idx?idx.getX(i+2):i+2;
+      a.fromBufferAttribute(pos,ia);
+      b.fromBufferAttribute(pos,ib);
+      d.fromBufferAttribute(pos,ic);
+      e1.subVectors(b,a);
+      e2.subVectors(d,a);
+      normalSum.crossVectors(e1,e2);
+      if(normalSum.lengthSq()>1e-10)normalSum.normalize();
+    }
+    if(normalSum.lengthSq()>1e-8){
+      normalSum.normalize();
+      if(normalSum.y<0)normalSum.negate();
+      const up=new THREE.Vector3(0,1,0);
+      const q=new THREE.Quaternion().setFromUnitVectors(normalSum,up);
+      farmModel.quaternion.premultiply(q);
+      farmModel.updateMatrixWorld(true);
+    }
+  }
+
   const box=new THREE.Box3().setFromObject(farmModel);
   const size=box.getSize(new THREE.Vector3());
   const center=box.getCenter(new THREE.Vector3());
@@ -588,8 +637,6 @@ async function loadFarmModel(){
   );
 
   scene.add(farmModel);
-  farmModel.rotation.x=0;
-  farmModel.rotation.z=0;
   farmModel.updateMatrixWorld(true);
   buildWorldCollisions();
   findSafeSpawn();
