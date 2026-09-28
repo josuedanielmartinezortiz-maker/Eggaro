@@ -43,7 +43,7 @@
 <div class="invGrid" id="inventoryGrid"></div>
 <button id="closeInventory">CERRAR</button>
 </div></div>
-<div id="loading">🌱 Preparando mundo 3D…</div>
+<div id="loading">🗺️ Preparando mapa EGGARO…</div>
 <div id="hud">
   <div class="panel" id="status">🌳 Árbol de prueba · 100 resistencia</div>
   <div class="panel" id="character">🐔 Selección: —</div>
@@ -102,11 +102,11 @@ const cameraTarget=new THREE.Vector3();
 const cameraDesired=new THREE.Vector3();
 const cameraOffset=new THREE.Vector3();
 let cameraYaw=Math.PI;
-let cameraPitch=0.38;
-let cameraDistance=7.2;
+let cameraPitch=0.72;
+let cameraDistance=8.5;
 
-const CAMERA_MIN_DISTANCE=3.2;
-const CAMERA_MAX_DISTANCE=12;
+const CAMERA_MIN_DISTANCE=4;
+const CAMERA_MAX_DISTANCE=14;
 const CAMERA_MIN_PITCH=0.12;
 const CAMERA_MAX_PITCH=1.05;
 
@@ -115,7 +115,7 @@ let mouseCameraActive=false;
 let mouseLastX=0;
 let mouseLastY=0;
 let pinchStartDistance=0;
-let pinchStartCameraDistance=7.2;
+let pinchStartCameraDistance=8.5;
 
 function cameraInputAllowed(target){
   return !!target && !target.closest('#joystick,#actions,#select,#inventory,#inventoryBtn,button');
@@ -237,148 +237,30 @@ scene.add(new THREE.HemisphereLight(0xffffff,0x557744,2.1));
 const sun=new THREE.DirectionalLight(0xffffff,3);
 sun.position.set(12,20,8);sun.castShadow=true;scene.add(sun);
 
-function makeTerrain(){
- const size=180, segments=90;
- const geo=new THREE.PlaneGeometry(size,size,segments,segments);
- const pos=geo.attributes.position;
- for(let i=0;i<pos.count;i++){
-  const x=pos.getX(i), z=pos.getY(i);
-  let h=0.45*Math.sin(x*.11)*Math.cos(z*.09);
-  h+=0.65*Math.sin((x+z)*.045);
-  h+=0.28*Math.sin(z*.22);
-  // Colinas suaves para que el relieve tenga volumen visible desde atrás.
-  h+=0.9*Math.exp(-((x+24)*(x+24)+(z+30)*(z+30))/420);
-  h+=0.65*Math.exp(-((x-27)*(x-27)+(z+2)*(z+2))/360);
-  // Suavizar la zona de la granja y caminos.
-  if(Math.abs(x)<10 && z>4 && z<27) h*=.35;
-  if(Math.abs(x)<4.5) h*=.25;
-  pos.setZ(i,h);
- }
- geo.computeVertexNormals();
- const mat=new THREE.MeshStandardMaterial({color:0x78ad55,roughness:1});
- const terrain=new THREE.Mesh(geo,mat);
- terrain.rotation.x=-Math.PI/2;
- terrain.receiveShadow=true;
- scene.add(terrain);
- return terrain;
-}
-const ground=makeTerrain();
+const mapTextureLoader=new THREE.TextureLoader();
+const MAP_WIDTH=60;
+const MAP_DEPTH=100;
+const mapTexture=mapTextureLoader.load('./IMG-20260927-WA0019.jpg',()=>{
+  mapTexture.colorSpace=THREE.SRGBColorSpace;
+  mapTexture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
+});
+mapTexture.colorSpace=THREE.SRGBColorSpace;
+const mapMaterial=new THREE.MeshBasicMaterial({
+  map:mapTexture,
+  side:THREE.DoubleSide
+});
+const mapPlane=new THREE.Mesh(new THREE.PlaneGeometry(MAP_WIDTH,MAP_DEPTH),mapMaterial);
+mapPlane.rotation.x=-Math.PI/2;
+mapPlane.position.set(0,-0.04,0);
+scene.add(mapPlane);
 
-function box(w,h,d,color,x,y,z,roughness=1){
- const m=new THREE.Mesh(
-  new THREE.BoxGeometry(w,h,d),
-  new THREE.MeshStandardMaterial({color,roughness})
- );
- m.position.set(x,y,z);
- m.castShadow=true;m.receiveShadow=true;
- scene.add(m);
- return m;
-}
-function roof(w,d,color,x,y,z){
- const g=new THREE.Group();
- const a=new THREE.Mesh(new THREE.BoxGeometry(w,.22,d*.56),new THREE.MeshStandardMaterial({color,roughness:1}));
- const b=a.clone();
- a.rotation.z=.48;b.rotation.z=-.48;
- a.position.set(-w*.23,y,z);b.position.set(w*.23,y,z);
- g.add(a,b);g.position.x=x;g.position.z=z;scene.add(g);return g;
-}
-function house(x,z,w=6,d=5,color=0xa96f3e,roofColor=0x8b3f2f){
- box(w,3,d,color,x,1.5,z);
- roof(w+.8,d+.7,roofColor,x,3.25,z);
- box(1.2,1.9,.16,0x5a321f,x,1,z-d/2-.09);
- box(.7,.9,.12,0x5b86a4,x-w*.28,1.25,z-d/2-.1);
- box(.7,.9,.12,0x5b86a4,x+w*.28,1.25,z-d/2-.1);
-}
-function makeWorldFromBlueprint(){
- // Río inferior: agua con orillas elevadas para que se sienta como una zona 3D.
- const river=new THREE.Mesh(
-  new THREE.BoxGeometry(86,.34,15),
-  new THREE.MeshStandardMaterial({color:0x2e9fd0,roughness:.2,metalness:.05})
- );
- river.position.set(0,.02,57);river.receiveShadow=true;scene.add(river);
- for(let x=-42;x<=42;x+=4){
-  const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.55+Math.random()*.35,0),new THREE.MeshStandardMaterial({color:0x9b9a76,roughness:1}));
-  rock.position.set(x,.25+Math.random()*.1,49.7+(x%8)*.15);
-  rock.scale.y=.65;rock.castShadow=true;scene.add(rock);
- }
- // Camino principal, con grosor variable y una pequeña plaza frente al pozo.
- const pathMat=new THREE.MeshStandardMaterial({color:0xb87945,roughness:1});
- const path=new THREE.Mesh(new THREE.BoxGeometry(5,.08,104),pathMat);
- path.position.set(0,.06,2);path.receiveShadow=true;scene.add(path);
- const plaza=new THREE.Mesh(new THREE.CylinderGeometry(7,7,.12,32),pathMat);
- plaza.position.set(0,.12,27);plaza.scale.z=.72;plaza.receiveShadow=true;scene.add(plaza);
-
- // Casas y pozo en la zona de pueblo/granja, como en el plano.
- house(-9,31,8,6,0x9b5f38,0x7c342a);
- house(9,31,7,6,0x9b633e,0x8b3b2c);
- house(-10,20,7,5,0x8c5936,0x713226);
- house(10,20,7,5,0xa06b40,0x84392c);
- // Casa grande de la granja.
- house(-1,39,12,7,0x8e5a36,0x7b3528);
-
- // Pozo central.
- const well=new THREE.Mesh(new THREE.CylinderGeometry(2.1,2.25,1.15,18),new THREE.MeshStandardMaterial({color:0x9a9275,roughness:1}));
- well.position.set(0,0.58,27);well.castShadow=true;scene.add(well);
- const water=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,.12,24),new THREE.MeshStandardMaterial({color:0x248fc2,roughness:.2}));
- water.position.set(0,1.18,27);scene.add(water);
- box(.18,3,.18,0x6a4228,0,2.55,27);box(4,.18,.18,0x6a4228,0,3.9,27);
-
- // Aserradero al lado izquierdo.
- box(9,2.4,6,0x754529,-14,1.2,7);
- roof(10,6.8,0x6b3628,-14,2.8,7);
- for(let x=-18;x<=-10;x+=2) box(1.1,1.0,1.1,0xb57a43,x,.5,2.5);
- box(2.5,.35,2.5,0x6b4027,-14,2.6,10);
-
- // Manzano a la derecha.
- const apple=new THREE.Group();
- const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.35,.55,3.2,8),new THREE.MeshStandardMaterial({color:0x704324,roughness:1}));
- trunk.position.y=1.6;apple.add(trunk);
- for(const p of [[-.9,3.2,0],[.8,3.35,.1],[0,4,.2],[-.25,4.25,-.2]]){
-  const crown=new THREE.Mesh(new THREE.SphereGeometry(1.25,10,8),new THREE.MeshStandardMaterial({color:0x3e8b35,roughness:1}));
-  crown.position.set(...p);crown.castShadow=true;apple.add(crown);
- }
- for(const p of [[-.7,3.7,.9],[.75,3.8,.5],[.1,4.45,.2]]){
-  const a=new THREE.Mesh(new THREE.SphereGeometry(.16,8,6),new THREE.MeshStandardMaterial({color:0xd7372f,roughness:1}));
-  a.position.set(...p);apple.add(a);
- }
- apple.position.set(13,0,12);scene.add(apple);
-
- // Campo de trigo y zona de madera en la parte superior.
- const field=new THREE.Mesh(new THREE.BoxGeometry(18,.18,12),new THREE.MeshStandardMaterial({color:0xc98f25,roughness:1}));
- field.position.set(-7,.1,-15);field.receiveShadow=true;scene.add(field);
- for(let x=-15;x<=1;x+=1.1){
-  for(let z=-20;z<=-10;z+=1.1){
-   const stalk=new THREE.Mesh(new THREE.ConeGeometry(.12,.9,5),new THREE.MeshStandardMaterial({color:0xf0b72e,roughness:1}));
-   stalk.position.set(x,.65,z);stalk.rotation.y=Math.random()*Math.PI;scene.add(stalk);
-  }
- }
- for(let x=-26;x<=-10;x+=1.7){
-  for(let z=-22;z<=-9;z+=1.7){
-   const stump=new THREE.Mesh(new THREE.CylinderGeometry(.42,.5,1.7,7),new THREE.MeshStandardMaterial({color:0x5c3826,roughness:1}));
-   stump.position.set(x,.85,z);stump.castShadow=true;scene.add(stump);
-  }
- }
-
- // Escalera/puente hacia la parte alta.
- for(let i=0;i<9;i++){
-  const step=box(4,.28,1.05,0x8d5a35,0,-.15,-1-i*1.05);
-  step.position.y=.15+i*.18;
- }
-
- // Zona cerrada superior derecha: ruinas, piedras y señal NO ENTRAR.
- for(let i=0;i<12;i++){
-  const rock= new THREE.Mesh(new THREE.DodecahedronGeometry(.65+Math.random()*.5,0),new THREE.MeshStandardMaterial({color:0x77756a,roughness:1}));
-  rock.position.set(12+(Math.random()-.5)*6,.55,-18+(Math.random()-.5)*7);
-  rock.scale.y=1.1;rock.castShadow=true;scene.add(rock);
- }
- box(5.5,2.4,1.1,0x6f452c,15,1.2,-21);
- box(4.8,1.8,1.0,0x4d3a2b,15,2.25,-21);
- const sign=box(3.8,1.25,.16,0xd0a56b,11.5,2.1,-17);
- // Senderos secundarios pequeños.
- const sidePath=new THREE.Mesh(new THREE.BoxGeometry(16,.07,3),pathMat);
- sidePath.position.set(0,.08,45);scene.add(sidePath);
-}
-makeWorldFromBlueprint();
+const mapShadow=new THREE.Mesh(
+  new THREE.CircleGeometry(.9,24),
+  new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.18,depthWrite:false})
+);
+mapShadow.rotation.x=-Math.PI/2;
+mapShadow.position.y=.01;
+scene.add(mapShadow);
 
 const loader=new GLTFLoader();
 const draco=new DRACOLoader();
@@ -396,44 +278,71 @@ let farmPlot,cropVisual,highGrassGroup;
 let selected=localStorage.getItem('gamerpro_personaje')||new URLSearchParams(location.search).get('personaje')||'Micaela';
 if(!['Mike','Micaela'].includes(selected))selected='Micaela';
 
-const playerState={x:0,z:8,speed:4};
+const playerState={x:0,z:34,speed:4};
 
-// Colisiones del mundo: el personaje no atraviesa casas, aserradero, pozo,
-// ruinas, río ni los límites del mapa. Son invisibles y no afectan al render.
+// Colisiones invisibles alineadas con el mapa de IMG-20260927-WA0019.jpg.
+// Coordenadas del plano: X izquierda/derecha, Z arriba/abajo.
 const collisionBoxes=[];
-function addCollision(x,z,w,d,pad=.45){collisionBoxes.push({x,z,w:w+pad*2,d:d+pad*2})}
+function addCollision(x,z,w,d,pad=.35){
+  collisionBoxes.push({x,z,w:w+pad*2,d:d+pad*2});
+}
 function collidesAt(x,z){
- const radius=.55;
- for(const b of collisionBoxes){
-  if(x+radius>b.x-b.w/2 && x-radius<b.x+b.w/2 &&
-     z+radius>b.z-b.d/2 && z-radius<b.z+b.d/2)return true;
- }
- return false;
+  const radius=.48;
+  for(const b of collisionBoxes){
+    if(
+      x+radius>b.x-b.w/2 && x-radius<b.x+b.w/2 &&
+      z+radius>b.z-b.d/2 && z-radius<b.z+b.d/2
+    ) return true;
+  }
+  return false;
 }
 function buildWorldCollisions(){
- // Casas.
- addCollision(-9,31,8,6);
- addCollision(9,31,7,6);
- addCollision(-10,20,7,5);
- addCollision(10,20,7,5);
- addCollision(-1,39,12,7);
- // Aserradero y madera.
- addCollision(-14,7,9,6);
- // Pozo.
- addCollision(0,27,4.5,4.5);
- // Campo de trigo: se puede caminar alrededor, pero no cruzarlo.
- addCollision(-7,-15,18,12);
- // Zona cerrada superior derecha.
- addCollision(15,-21,7,3);
- // Río.
- addCollision(0,57,86,15);
- // Bordes.
- addCollision(-46,0,2,120);
- addCollision(46,0,2,120);
- addCollision(0,-48,90,2);
- addCollision(0,48,90,2);
+  collisionBoxes.length=0;
+
+  // Límites del mapa.
+  addCollision(-30,0,1.2,100);
+  addCollision(30,0,1.2,100);
+  addCollision(0,-50,60,1.2);
+  addCollision(0,50,60,1.2);
+
+  // Río inferior.
+  addCollision(0,45.5,58,9);
+
+  // Casa grande izquierda.
+  addCollision(-14.8,20.8,28,12);
+
+  // Casa pequeña inferior izquierda.
+  addCollision(-21.2,27.3,10,9);
+
+  // Casa/tienda inferior derecha.
+  addCollision(21.2,27.0,10,9);
+
+  // Pozo central.
+  addCollision(-1.0,18.0,7,7);
+
+  // Aserradero.
+  addCollision(-19.0,-11.5,14,11);
+
+  // Zona de ruinas.
+  addCollision(20.0,-10.0,12,13);
+
+  // Árbol de manzanas.
+  addCollision(14.0,-14.5,6,7);
+
+  // Campo de trigo.
+  addCollision(-8.8,-31.0,14,16);
+
+  // Madera/bloque superior izquierdo.
+  addCollision(-20.0,-29.0,9,8);
+
+  // Señal y zona prohibida superior derecha.
+  addCollision(15.5,-39.0,16,8);
+
+  // Escalera central superior: se puede subir por ella.
+  // No se bloquea para conservar el camino.
 }
 buildWorldCollisions();
+
 const treeState={resistance:100,maxResistance:100,alive:true};
 let nearbyObject='';
 const farmHud=document.getElementById('farmHud');
@@ -560,18 +469,9 @@ farmPlot=makeFarm();
 highGrassGroup=makeHighGrass();
 
 async function loadTree(){
- tree=await loadModel(MODELS.treeA);
- tree.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=true;}});
- const box=new THREE.Box3().setFromObject(tree);
- const size=box.getSize(new THREE.Vector3());
- const center=box.getCenter(new THREE.Vector3());
- const height=Math.max(size.y,0.001);
- const s=6/height;
- tree.scale.setScalar(s);
- tree.position.set(-12,-center.y*s+0.0,-5);
- scene.add(tree);
+  // El árbol del mapa ya está incluido en la imagen; no añadimos otro modelo encima.
+  tree=null;
 }
-
 function getNearbyObject(){
  if(treeState.alive && tree && Math.hypot(playerState.x-tree.position.x,playerState.z-tree.position.z)<4.5)return 'tree';
  const farmX=Math.abs(playerState.x)<5 && Math.abs(playerState.z-8)<5;
@@ -643,7 +543,7 @@ function move(dt){
  if(!x&&!z)return;
  const l=Math.hypot(x,z);x/=l;z/=l;
  const inHighGrass=Math.abs(playerState.x)>5.2 && Math.abs(playerState.x)<28 && Math.abs(playerState.z)<30;
- const moveSpeed=inHighGrass?1.55:playerState.speed;
+ const moveSpeed=playerState.speed;
  const nextX=playerState.x+x*moveSpeed*dt;
  const nextZ=playerState.z+z*moveSpeed*dt;
  // Resolver por ejes para que pueda deslizarse por las esquinas de los objetos.
@@ -657,6 +557,8 @@ function move(dt){
  }
  stumbleCooldown=Math.max(0,stumbleCooldown-dt);
  player.position.x=playerState.x;player.position.z=playerState.z;
+ mapShadow.position.x=playerState.x;
+ mapShadow.position.z=playerState.z;
  if(Math.abs(x)+Math.abs(z)>0) player.rotation.y=Math.atan2(x,z);
  updateActionButton();
 }
@@ -677,7 +579,7 @@ function animate(now){
    Math.cos(cameraYaw)*Math.cos(cameraPitch)*distance
   );
   cameraDesired.copy(player.position).add(cameraOffset);
-  cameraTarget.set(player.position.x,player.position.y+1.25,player.position.z);
+  cameraTarget.set(player.position.x,player.position.y+1.35,player.position.z);
   camera.position.lerp(cameraDesired,1-Math.pow(.000001,dt));
   camera.lookAt(cameraTarget);
  }
@@ -688,12 +590,11 @@ function animate(now){
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 (async()=>{
  try{
-  await loadTree();
   await loadCharacter();
   farmHud.style.display='block';
   farmHud.textContent='🌱 Parcela lista · CULTIVAR';
   loading.style.display='none';
-  setStatus('🌾 EGGARO · mapa 3D con colisiones');
+  setStatus('🗺️ EGGARO · mapa con colisiones');
  }catch(e){
   loading.textContent='⚠️ Error cargando los modelos 3D';
   console.error(e);
