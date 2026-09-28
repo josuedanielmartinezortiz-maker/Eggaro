@@ -280,7 +280,7 @@ let farmPlot,cropVisual,highGrassGroup;
 let selected=localStorage.getItem('gamerpro_personaje')||new URLSearchParams(location.search).get('personaje')||'Micaela';
 if(!['Mike','Micaela'].includes(selected))selected='Micaela';
 
-const playerState={x:0,z:34,speed:4};
+const playerState={x:0,z:0,speed:4};
 
 // Colisiones invisibles alineadas con el mapa de IMG-20260927-WA0019.jpg.
 // Coordenadas del plano: X izquierda/derecha, Z arriba/abajo.
@@ -454,11 +454,19 @@ async function loadCharacter(){
   const height=Math.max(size.y,0.001);
   const targetHeight=2.6;
   const s=targetHeight/height;
+
+  // Escala primero y después calculamos la caja real para apoyar los pies
+  // exactamente sobre el suelo del GLB.
   player.scale.setScalar(s);
-  player.position.set(playerState.x,-box.min.y*s,playerState.z);
-  player.position.x-=center.x*s;
-  player.position.z-=center.z*s;
+  player.position.set(
+    playerState.x-center.x*s,
+    0,
+    playerState.z-center.z*s
+  );
   scene.add(player);
+
+  const scaledBox=new THREE.Box3().setFromObject(player);
+  player.position.y-=scaledBox.min.y;
   if(playerAnimations.length){
     playerMixer=new THREE.AnimationMixer(player);
     const idle=playerAnimations.find(a=>/idle|reposo|stand/i.test(a.name))||playerAnimations[0];
@@ -585,12 +593,18 @@ function move(dt){
  inputX/=len;inputZ/=len;
 
  // Movimiento relativo a la cámara, estilo tercera persona.
- const forwardX=-Math.sin(cameraYaw);
- const forwardZ=-Math.cos(cameraYaw);
- const rightX=Math.cos(cameraYaw);
- const rightZ=-Math.sin(cameraYaw);
- const x=rightX*inputX+forwardX*inputZ;
- const z=rightZ*inputX+forwardZ*inputZ;
+ // Usamos la dirección REAL hacia donde mira la cámara.
+ const forward=new THREE.Vector3();
+ camera.getWorldDirection(forward);
+ forward.y=0;
+ if(forward.lengthSq()<0.0001)return;
+ forward.normalize();
+
+ // Derecha de la cámara.
+ const rightX=forward.z;
+ const rightZ=-forward.x;
+ const x=rightX*inputX+forward.x*inputZ;
+ const z=rightZ*inputX+forward.z*inputZ;
 
  const moveSpeed=playerState.speed;
  const nextX=playerState.x+x*moveSpeed*dt;
