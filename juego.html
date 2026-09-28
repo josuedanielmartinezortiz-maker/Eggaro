@@ -102,18 +102,116 @@ const cameraTarget=new THREE.Vector3();
 const cameraDesired=new THREE.Vector3();
 const cameraOffset=new THREE.Vector3();
 let cameraYaw=0;
-let cameraPitch=0.48;
+let cameraPitch=0.42;
+let cameraDistance=7.2;
 let cameraTouchId=null;
 let cameraLastX=0;
 let cameraLastY=0;
+let cameraTouches=new Map();
+let cameraPinchStart=0;
+let cameraDistanceStart=7.2;
+let cameraMouseDown=false;
+let cameraMouseX=0;
+let cameraMouseY=0;
+const CAMERA_MIN_DISTANCE=3.2;
+const CAMERA_MAX_DISTANCE=12;
+const CAMERA_MIN_PITCH=0.12;
+const CAMERA_MAX_PITCH=1.05;
+
+function cameraInputAllowed(target){
+  return !target.closest('#joystick,#actions,#select,#inventory,#inventoryBtn,#cameraMode,button');
+}
+
+function rotateCamera(dx,dy){
+  cameraYaw-=dx*0.006;
+  cameraPitch=THREE.MathUtils.clamp(cameraPitch-dy*0.004,CAMERA_MIN_PITCH,CAMERA_MAX_PITCH);
+}
+
+function zoomCamera(amount){
+  cameraDistance=THREE.MathUtils.clamp(cameraDistance+amount,CAMERA_MIN_DISTANCE,CAMERA_MAX_DISTANCE);
+}
+
 const renderer=new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
 renderer.setSize(innerWidth,innerHeight);
 renderer.shadowMap.enabled=true;
 root.appendChild(renderer.domElement);
 
+// Cámara táctil estilo Roblox: arrastrar con un dedo gira, dos dedos hacen zoom.
+// En PC: botón izquierdo + arrastre gira y rueda hace zoom.
+renderer.domElement.style.touchAction='none';
 
+renderer.domElement.addEventListener('pointerdown',e=>{
+  if(!cameraInputAllowed(e.target))return;
+  if(e.pointerType==='mouse'){
+    if(e.button!==0)return;
+    cameraMouseDown=true;
+    cameraMouseX=e.clientX;
+    cameraMouseY=e.clientY;
+    return;
+  }
+  cameraTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(cameraTouches.size===1){
+    cameraTouchId=e.pointerId;
+    cameraLastX=e.clientX;
+    cameraLastY=e.clientY;
+  }else if(cameraTouches.size===2){
+    const pts=[...cameraTouches.values()];
+    cameraPinchStart=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+    cameraDistanceStart=cameraDistance;
+    cameraTouchId=null;
+  }
+});
 
+renderer.domElement.addEventListener('pointermove',e=>{
+  if(e.pointerType==='mouse'){
+    if(!cameraMouseDown)return;
+    rotateCamera(e.clientX-cameraMouseX,e.clientY-cameraMouseY);
+    cameraMouseX=e.clientX;
+    cameraMouseY=e.clientY;
+    return;
+  }
+  if(!cameraTouches.has(e.pointerId))return;
+  cameraTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(cameraTouches.size===1 && cameraTouchId===e.pointerId){
+    rotateCamera(e.clientX-cameraLastX,e.clientY-cameraLastY);
+    cameraLastX=e.clientX;
+    cameraLastY=e.clientY;
+  }else if(cameraTouches.size===2){
+    const pts=[...cameraTouches.values()];
+    const distance=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+    if(cameraPinchStart>0){
+      cameraDistance=THREE.MathUtils.clamp(
+        cameraDistanceStart-(distance-cameraPinchStart)*0.018,
+        CAMERA_MIN_DISTANCE,CAMERA_MAX_DISTANCE
+      );
+    }
+  }
+});
+
+function endCameraPointer(e){
+  if(e.pointerType==='mouse'){
+    cameraMouseDown=false;
+    return;
+  }
+  cameraTouches.delete(e.pointerId);
+  if(cameraTouches.size===1){
+    const [id,p]=[...cameraTouches.entries()][0];
+    cameraTouchId=id;
+    cameraLastX=p.x;
+    cameraLastY=p.y;
+  }else{
+    cameraTouchId=null;
+    cameraPinchStart=0;
+  }
+}
+renderer.domElement.addEventListener('pointerup',endCameraPointer);
+renderer.domElement.addEventListener('pointercancel',endCameraPointer);
+renderer.domElement.addEventListener('wheel',e=>{
+  if(!cameraInputAllowed(e.target))return;
+  e.preventDefault();
+  zoomCamera(e.deltaY*0.012);
+},{passive:false});
 
 scene.add(new THREE.HemisphereLight(0xffffff,0x557744,2.1));
 const sun=new THREE.DirectionalLight(0xffffff,3);
@@ -550,14 +648,13 @@ function animate(now){
  updateActionButton();
  if(playerMixer)playerMixer.update(dt);
  if(player){
-  // Cámara fija detrás del personaje: lo sigue suavemente y mantiene siempre
-  // una vista de tercera persona desde atrás, ligeramente elevada.
-  const distance=7.2;
-  const followYaw=player.rotation.y;
+  // Cámara libre estilo Roblox: gira independientemente del personaje
+  // y sigue suavemente su posición.
+  const distance=cameraDistance;
   cameraOffset.set(
-   Math.sin(followYaw)*Math.cos(.48)*distance,
-   Math.sin(.48)*distance,
-   Math.cos(followYaw)*Math.cos(.48)*distance
+   Math.sin(cameraYaw)*Math.cos(cameraPitch)*distance,
+   Math.sin(cameraPitch)*distance,
+   Math.cos(cameraYaw)*Math.cos(cameraPitch)*distance
   );
   cameraDesired.copy(player.position).add(cameraOffset);
   cameraTarget.set(player.position.x,player.position.y+1.25,player.position.z);
