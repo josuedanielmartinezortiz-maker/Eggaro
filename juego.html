@@ -30,7 +30,24 @@
 .invItem{background:#ffffff12;border:1px solid #ffffff20;border-radius:14px;padding:12px;text-align:center;font-weight:900}
 .invItem span{display:block;font-size:28px;margin-bottom:5px}
 #closeInventory{margin-top:14px;width:100%;border:0;border-radius:12px;padding:12px;background:#ffd34f;color:#50360a;font-weight:1000}
-#loading{position:fixed;inset:0;display:grid;place-items:center;background:#78c95a;z-index:20;color:#fff;font-size:20px;font-weight:900}
+#loading{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(160deg,#78c95a,#3f8e48);z-index:50;color:#fff;font-size:20px;font-weight:900}
+#loadingCard,#selectCard{width:min(88vw,420px);padding:28px 22px;border-radius:24px;background:#10251df2;border:2px solid #ffffff22;box-shadow:0 18px 60px #0008;text-align:center}
+#loadingLogo,.selectTitle{font-size:42px;font-weight:1000;letter-spacing:4px;color:#ffd34f;text-shadow:0 4px #8b5c12;margin-bottom:12px}
+#loadingText{font-size:17px;margin:8px 0 14px}
+#loadingBar{height:12px;background:#ffffff18;border-radius:99px;overflow:hidden}
+#loadingFill{display:block;width:0;height:100%;background:#ffd34f;border-radius:99px;transition:width .2s}
+#loadingPercent{font-size:12px;opacity:.7;margin-top:8px}
+#characterSelect{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(160deg,#78c95a,#3f8e48);z-index:45;color:#fff}
+#selectCard{display:flex;flex-direction:column;align-items:center}
+.selectTitle{font-size:46px}
+.selectSub{opacity:.8;margin-bottom:18px}
+.characterCard{width:220px;border:2px solid #ffd34f;border-radius:18px;padding:18px;background:#ffffff12;color:#fff;font-weight:900}
+.characterCard.active{background:#ffd34f;color:#50360a}
+.characterIcon{display:block;font-size:52px;margin-bottom:8px}
+.characterCard small{display:block;opacity:.7;margin-top:5px}
+#startGame{margin-top:18px;width:220px;border:0;border-radius:15px;padding:14px;background:#ffd34f;color:#50360a;font-weight:1000;box-shadow:0 5px 0 #a56e15}
+#startGame:disabled{opacity:.5;box-shadow:none}
+#selectStatus{margin-top:12px;font-size:12px;opacity:.7}
 .small{opacity:.75;font-size:12px}
 @media(min-width:800px){#actions{display:none}}
 </style>
@@ -43,15 +60,32 @@
 <div class="invGrid" id="inventoryGrid"></div>
 <button id="closeInventory">CERRAR</button>
 </div></div>
-<div id="loading">🗺️ Preparando mapa EGGARO…</div>
+<div id="loading">
+  <div id="loadingCard">
+    <div id="loadingLogo">EGGARO</div>
+    <div id="loadingText">🗺️ Preparando mapa 3D…</div>
+    <div id="loadingBar"><i id="loadingFill"></i></div>
+    <div id="loadingPercent">0%</div>
+  </div>
+</div>
+<div id="characterSelect">
+  <div id="selectCard">
+    <div class="selectTitle">🥚 EGGARO</div>
+    <div class="selectSub">Selecciona tu personaje</div>
+    <button id="micaelaSelect" class="characterCard active">
+      <span class="characterIcon">🐔</span>
+      <b>Micaela</b>
+      <small>Lista para jugar</small>
+    </button>
+    <button id="startGame" disabled>⏳ CARGANDO MAPA…</button>
+    <div id="selectStatus">Preparando granja.glb…</div>
+  </div>
+</div>
 <div id="hud">
   <div class="panel" id="status">🌳 Árbol de prueba · 100 resistencia</div>
   <div class="panel" id="character">🐔 Selección: —</div>
 </div>
-<div id="select">
-  <button id="mike">Mike</button>
-  <button id="micaela">Micaela</button>
-</div>
+
 <div id="farmHud" class="panel" style="position:fixed;left:12px;bottom:18px;z-index:8;display:none">🌱 Parcela: libre</div>
 <div id="joystick"><button id="stick"></button></div>
 <div id="actions">
@@ -144,10 +178,20 @@ function pointerDistance(){
   return Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);
 }
 
-const renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
+const renderer=new THREE.WebGLRenderer({
+  antialias:true,
+  powerPreference:'high-performance',
+  depth:true,
+  stencil:false,
+  preserveDrawingBuffer:false
+});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.35));
 renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.05;
 renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 root.appendChild(renderer.domElement);
 
 // Cámara estilo Roblox:
@@ -277,8 +321,7 @@ const MODELS={
 
 let player,tree,farmModel,playerMixer,playerAnimations=[];
 let farmPlot,cropVisual,highGrassGroup;
-let selected=localStorage.getItem('gamerpro_personaje')||new URLSearchParams(location.search).get('personaje')||'Micaela';
-if(!['Mike','Micaela'].includes(selected))selected='Micaela';
+const selected='Micaela';
 
 const playerState={x:0,z:0,speed:4};
 
@@ -425,12 +468,20 @@ function resetJoystick(){joyPointer=null;stick.style.transform='translate(0,0)';
 joy.addEventListener('pointerup',resetJoystick);joy.addEventListener('pointercancel',resetJoystick);
 
 function setStatus(t){status.textContent=t}
-function setSelection(name){selected=name;localStorage.setItem('gamerpro_personaje',name);characterLabel.textContent='🐔 Selección: '+name;document.getElementById(name.toLowerCase()).classList.add('active');for(const n of ['mike','micaela'])if(n!==name.toLowerCase())document.getElementById(n).classList.remove('active');loadCharacter()}
-document.getElementById('mike').onclick=()=>setSelection('Mike');
-document.getElementById('micaela').onclick=()=>setSelection('Micaela');
-characterLabel.textContent='🐔 Selección: '+selected;
-document.getElementById(selected.toLowerCase()).classList.add('active');
+characterLabel.textContent='🐔 Micaela';
 
+const loadingText=document.getElementById('loadingText');
+const loadingFill=document.getElementById('loadingFill');
+const loadingPercent=document.getElementById('loadingPercent');
+const selectStatus=document.getElementById('selectStatus');
+const startGame=document.getElementById('startGame');
+function setLoadProgress(percent,text){
+  const p=Math.max(0,Math.min(100,Math.round(percent)));
+  loadingFill.style.width=p+'%';
+  loadingPercent.textContent=p+'%';
+  loadingText.textContent=text;
+  selectStatus.textContent=text;
+}
 async function loadModel(path){
  console.log('[EGGARO] Cargando GLB:',path);
  const gltf=await loader.loadAsync(path, progress=>{
@@ -443,39 +494,40 @@ async function loadModel(path){
 
 async function loadCharacter(){
  if(player){scene.remove(player);player=null;playerMixer=null;}
- try{
-  const gltf=await loader.loadAsync(MODELS[selected]);
-  player=gltf.scene;
-  playerAnimations=gltf.animations||[];
-  player.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=true;}});
-  const box=new THREE.Box3().setFromObject(player);
-  const size=box.getSize(new THREE.Vector3());
-  const center=box.getCenter(new THREE.Vector3());
-  const height=Math.max(size.y,0.001);
-  const targetHeight=2.6;
-  const s=targetHeight/height;
-
-  // Escala primero y después calculamos la caja real para apoyar los pies
-  // exactamente sobre el suelo del GLB.
-  player.scale.setScalar(s);
-  player.position.set(
-    playerState.x-center.x*s,
-    0,
-    playerState.z-center.z*s
-  );
-  scene.add(player);
-
-  const scaledBox=new THREE.Box3().setFromObject(player);
-  player.position.y-=scaledBox.min.y;
-  if(playerAnimations.length){
-    playerMixer=new THREE.AnimationMixer(player);
-    const idle=playerAnimations.find(a=>/idle|reposo|stand/i.test(a.name))||playerAnimations[0];
-    if(idle)playerMixer.clipAction(idle).reset().play();
-  }
-  characterLabel.textContent='🐔 Selección: '+selected;
- }catch(e){console.error('[EGGARO] Error personaje:',e);setStatus('⚠️ No se pudo cargar '+selected)}
+ const gltf=await loader.loadAsync(MODELS.Micaela);
+ player=gltf.scene;
+ playerAnimations=gltf.animations||[];
+ player.traverse(o=>{
+   if(o.isMesh){
+     o.castShadow=false;
+     o.receiveShadow=true;
+     o.frustumCulled=true;
+     if(o.material){
+       const materials=Array.isArray(o.material)?o.material:[o.material];
+       for(const m of materials){
+         if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;
+         m.needsUpdate=true;
+       }
+     }
+   }
+ });
+ const box=new THREE.Box3().setFromObject(player);
+ const size=box.getSize(new THREE.Vector3());
+ const center=box.getCenter(new THREE.Vector3());
+ const height=Math.max(size.y,0.001);
+ const s=2.6/height;
+ player.scale.setScalar(s);
+ player.position.set(playerState.x-center.x*s,0,playerState.z-center.z*s);
+ scene.add(player);
+ const scaledBox=new THREE.Box3().setFromObject(player);
+ player.position.y-=scaledBox.min.y;
+ if(playerAnimations.length){
+   playerMixer=new THREE.AnimationMixer(player);
+   const idle=playerAnimations.find(a=>/idle|reposo|stand/i.test(a.name))||playerAnimations[0];
+   if(idle)playerMixer.clipAction(idle).reset().play();
+ }
+ characterLabel.textContent='🐔 Micaela';
 }
-
 farmPlot=makeFarm();
 highGrassGroup=makeHighGrass();
 
@@ -484,9 +536,16 @@ async function loadFarmModel(){
   farmModel=gltf.scene;
   farmModel.traverse(o=>{
     if(o.isMesh){
-      o.castShadow=true;
-      o.receiveShadow=true;
       o.frustumCulled=true;
+      o.castShadow=false;
+      o.receiveShadow=true;
+      if(o.material){
+        const materials=Array.isArray(o.material)?o.material:[o.material];
+        for(const m of materials){
+          if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;
+          m.needsUpdate=true;
+        }
+      }
     }
   });
 
@@ -649,23 +708,38 @@ function animate(now){
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 (async()=>{
  try{
-  loading.textContent='🗺️ Cargando granja 3D…';
+  loading.style.display='grid';
+  setLoadProgress(5,'🧹 Limpiando escena…');
+  await new Promise(r=>requestAnimationFrame(r));
+  setLoadProgress(18,'🗺️ Cargando granja.glb…');
   await loadFarmModel();
-
-  loading.textContent='🐔 Cargando personaje…';
+  setLoadProgress(72,'🗺️ Preparando renderizado 3D…');
+  await new Promise(r=>requestAnimationFrame(r));
+  setLoadProgress(86,'🐔 Preparando Micaela…');
   await loadCharacter();
-
+  setLoadProgress(100,'✅ Todo listo');
+  await new Promise(r=>setTimeout(r,350));
+  loading.style.display='none';
+  startGame.disabled=false;
+  startGame.textContent='▶ JUGAR';
+  selectStatus.textContent='Granja 3D lista';
   farmHud.style.display='block';
   farmHud.textContent='🌱 Parcela lista · CULTIVAR';
-  loading.style.display='none';
   setStatus('🗺️ EGGARO · granja 3D lista');
  }catch(e){
   console.error('[EGGARO] Error de inicio:',e);
-  loading.textContent='⚠️ No se pudo cargar EGGARO. Revisa la consola.';
-  setStatus('⚠️ Error cargando el juego');
+  loadingText.textContent='⚠️ No se pudo cargar la granja 3D';
+  selectStatus.textContent='Revisa que granja.glb esté en la raíz del proyecto';
+  startGame.textContent='⚠️ ERROR';
  }
  requestAnimationFrame(animate);
 })();
+document.getElementById('micaelaSelect').onclick=()=>{
+  document.getElementById('micaelaSelect').classList.add('active');
+};
+startGame.onclick=()=>{
+  document.getElementById('characterSelect').style.display='none';
+};
 </script>
 </body>
 </html>
