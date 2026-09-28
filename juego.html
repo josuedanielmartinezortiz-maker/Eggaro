@@ -156,17 +156,121 @@ function makeTerrain(){
 }
 const ground=makeTerrain();
 
-function makeRaisedZone(w,d,color,x,z,height=.12){
- const geo=new THREE.BoxGeometry(w,height,d);
- const m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color,roughness:1}));
- m.position.set(x,height/2,z);
- m.receiveShadow=true;m.castShadow=false;scene.add(m);return m;
+function box(w,h,d,color,x,y,z,roughness=1){
+ const m=new THREE.Mesh(
+  new THREE.BoxGeometry(w,h,d),
+  new THREE.MeshStandardMaterial({color,roughness})
+ );
+ m.position.set(x,y,z);
+ m.castShadow=true;m.receiveShadow=true;
+ scene.add(m);
+ return m;
 }
-// Zonas 3D elevadas, sin grandes planos pegados al suelo.
-makeRaisedZone(34,32,0x86b95b,0,14,.18);
-makeRaisedZone(48,34,0x67994c,0,-17,.16);
-makeRaisedZone(34,32,0x527d42,-25,-30,.14);
-makeRaisedZone(34,32,0x72a653,27,-12,.16);
+function roof(w,d,color,x,y,z){
+ const g=new THREE.Group();
+ const a=new THREE.Mesh(new THREE.BoxGeometry(w,.22,d*.56),new THREE.MeshStandardMaterial({color,roughness:1}));
+ const b=a.clone();
+ a.rotation.z=.48;b.rotation.z=-.48;
+ a.position.set(-w*.23,y,z);b.position.set(w*.23,y,z);
+ g.add(a,b);g.position.x=x;g.position.z=z;scene.add(g);return g;
+}
+function house(x,z,w=6,d=5,color=0xa96f3e,roofColor=0x8b3f2f){
+ box(w,3,d,color,x,1.5,z);
+ roof(w+.8,d+.7,roofColor,x,3.25,z);
+ box(1.2,1.9,.16,0x5a321f,x,1,z-d/2-.09);
+ box(.7,.9,.12,0x5b86a4,x-w*.28,1.25,z-d/2-.1);
+ box(.7,.9,.12,0x5b86a4,x+w*.28,1.25,z-d/2-.1);
+}
+function makeWorldFromBlueprint(){
+ // Río inferior: agua con orillas elevadas para que se sienta como una zona 3D.
+ const river=new THREE.Mesh(
+  new THREE.BoxGeometry(86,.34,15),
+  new THREE.MeshStandardMaterial({color:0x2e9fd0,roughness:.2,metalness:.05})
+ );
+ river.position.set(0,.02,57);river.receiveShadow=true;scene.add(river);
+ for(let x=-42;x<=42;x+=4){
+  const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.55+Math.random()*.35,0),new THREE.MeshStandardMaterial({color:0x9b9a76,roughness:1}));
+  rock.position.set(x,.25+Math.random()*.1,49.7+(x%8)*.15);
+  rock.scale.y=.65;rock.castShadow=true;scene.add(rock);
+ }
+ // Camino principal, con grosor variable y una pequeña plaza frente al pozo.
+ const pathMat=new THREE.MeshStandardMaterial({color:0xb87945,roughness:1});
+ const path=new THREE.Mesh(new THREE.BoxGeometry(5,.08,104),pathMat);
+ path.position.set(0,.06,2);path.receiveShadow=true;scene.add(path);
+ const plaza=new THREE.Mesh(new THREE.CylinderGeometry(7,7,.12,32),pathMat);
+ plaza.position.set(0,.12,27);plaza.scale.z=.72;plaza.receiveShadow=true;scene.add(plaza);
+
+ // Casas y pozo en la zona de pueblo/granja, como en el plano.
+ house(-9,31,8,6,0x9b5f38,0x7c342a);
+ house(9,31,7,6,0x9b633e,0x8b3b2c);
+ house(-10,20,7,5,0x8c5936,0x713226);
+ house(10,20,7,5,0xa06b40,0x84392c);
+ // Casa grande de la granja.
+ house(-1,39,12,7,0x8e5a36,0x7b3528);
+
+ // Pozo central.
+ const well=new THREE.Mesh(new THREE.CylinderGeometry(2.1,2.25,1.15,18),new THREE.MeshStandardMaterial({color:0x9a9275,roughness:1}));
+ well.position.set(0,0.58,27);well.castShadow=true;scene.add(well);
+ const water=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,.12,24),new THREE.MeshStandardMaterial({color:0x248fc2,roughness:.2}));
+ water.position.set(0,1.18,27);scene.add(water);
+ box(.18,3,.18,0x6a4228,0,2.55,27);box(4,.18,.18,0x6a4228,0,3.9,27);
+
+ // Aserradero al lado izquierdo.
+ box(9,2.4,6,0x754529,-14,1.2,7);
+ roof(10,6.8,0x6b3628,-14,2.8,7);
+ for(let x=-18;x<=-10;x+=2) box(1.1,1.0,1.1,0xb57a43,x,.5,2.5);
+ box(2.5,.35,2.5,0x6b4027,-14,2.6,10);
+
+ // Manzano a la derecha.
+ const apple=new THREE.Group();
+ const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.35,.55,3.2,8),new THREE.MeshStandardMaterial({color:0x704324,roughness:1}));
+ trunk.position.y=1.6;apple.add(trunk);
+ for(const p of [[-.9,3.2,0],[.8,3.35,.1],[0,4,.2],[-.25,4.25,-.2]]){
+  const crown=new THREE.Mesh(new THREE.SphereGeometry(1.25,10,8),new THREE.MeshStandardMaterial({color:0x3e8b35,roughness:1}));
+  crown.position.set(...p);crown.castShadow=true;apple.add(crown);
+ }
+ for(const p of [[-.7,3.7,.9],[.75,3.8,.5],[.1,4.45,.2]]){
+  const a=new THREE.Mesh(new THREE.SphereGeometry(.16,8,6),new THREE.MeshStandardMaterial({color:0xd7372f,roughness:1}));
+  a.position.set(...p);apple.add(a);
+ }
+ apple.position.set(13,0,12);scene.add(apple);
+
+ // Campo de trigo y zona de madera en la parte superior.
+ const field=new THREE.Mesh(new THREE.BoxGeometry(18,.18,12),new THREE.MeshStandardMaterial({color:0xc98f25,roughness:1}));
+ field.position.set(-7,.1,-15);field.receiveShadow=true;scene.add(field);
+ for(let x=-15;x<=1;x+=1.1){
+  for(let z=-20;z<=-10;z+=1.1){
+   const stalk=new THREE.Mesh(new THREE.ConeGeometry(.12,.9,5),new THREE.MeshStandardMaterial({color:0xf0b72e,roughness:1}));
+   stalk.position.set(x,.65,z);stalk.rotation.y=Math.random()*Math.PI;scene.add(stalk);
+  }
+ }
+ for(let x=-26;x<=-10;x+=1.7){
+  for(let z=-22;z<=-9;z+=1.7){
+   const stump=new THREE.Mesh(new THREE.CylinderGeometry(.42,.5,1.7,7),new THREE.MeshStandardMaterial({color:0x5c3826,roughness:1}));
+   stump.position.set(x,.85,z);stump.castShadow=true;scene.add(stump);
+  }
+ }
+
+ // Escalera/puente hacia la parte alta.
+ for(let i=0;i<9;i++){
+  const step=box(4,.28,1.05,0x8d5a35,0,-.15,-1-i*1.05);
+  step.position.y=.15+i*.18;
+ }
+
+ // Zona cerrada superior derecha: ruinas, piedras y señal NO ENTRAR.
+ for(let i=0;i<12;i++){
+  const rock= new THREE.Mesh(new THREE.DodecahedronGeometry(.65+Math.random()*.5,0),new THREE.MeshStandardMaterial({color:0x77756a,roughness:1}));
+  rock.position.set(12+(Math.random()-.5)*6,.55,-18+(Math.random()-.5)*7);
+  rock.scale.y=1.1;rock.castShadow=true;scene.add(rock);
+ }
+ box(5.5,2.4,1.1,0x6f452c,15,1.2,-21);
+ box(4.8,1.8,1.0,0x4d3a2b,15,2.25,-21);
+ const sign=box(3.8,1.25,.16,0xd0a56b,11.5,2.1,-17);
+ // Senderos secundarios pequeños.
+ const sidePath=new THREE.Mesh(new THREE.BoxGeometry(16,.07,3),pathMat);
+ sidePath.position.set(0,.08,45);scene.add(sidePath);
+}
+makeWorldFromBlueprint();
 
 const loader=new GLTFLoader();
 const draco=new DRACOLoader();
@@ -319,12 +423,12 @@ async function loadTree(){
  const height=Math.max(size.y,0.001);
  const s=6/height;
  tree.scale.setScalar(s);
- tree.position.set(-center.x*s,-box.min.y*s,-center.z*s);
+ tree.position.set(-12,-center.y*s+0.0,-5);
  scene.add(tree);
 }
 
 function getNearbyObject(){
- if(treeState.alive && Math.hypot(playerState.x,playerState.z)<4.5)return 'tree';
+ if(treeState.alive && tree && Math.hypot(playerState.x-tree.position.x,playerState.z-tree.position.z)<4.5)return 'tree';
  const farmX=Math.abs(playerState.x)<5 && Math.abs(playerState.z-8)<5;
  if(farmX)return 'farm';
  return '';
@@ -335,7 +439,7 @@ function updateActionButton(){
  const labels={tree:'🪓 CORTAR',farm:'🌱 CULTIVAR','':'🤲 INTERACTUAR'};
  document.getElementById('act').textContent=labels[obj];
 }
-function nearTree(){return treeState.alive && Math.hypot(playerState.x,playerState.z)<4.5}
+function nearTree(){return treeState.alive && tree && Math.hypot(playerState.x-tree.position.x,playerState.z-tree.position.z)<4.5}
 
 function testTree(){
  if(!nearTree()){setStatus('🌳 Acércate al árbol de prueba');return}
@@ -416,17 +520,15 @@ function animate(now){
  updateActionButton();
  if(playerMixer)playerMixer.update(dt);
  if(player){
-  if(cameraMode==='third'){
-   // Tercera persona: cámara detrás y ligeramente elevada, siguiendo la orientación del personaje.
-   cameraOffset.set(0,3.4,6.8).applyAxisAngle(new THREE.Vector3(0,1,0),player.rotation.y);
-   cameraDesired.copy(player.position).add(cameraOffset);
-   cameraTarget.set(player.position.x,player.position.y+1.35,player.position.z);
-  }else{
-   // Primera persona: altura de ojos, sin mostrar el propio modelo desde dentro.
-   cameraDesired.set(player.position.x,player.position.y+2.15,player.position.z);
-   const forward=new THREE.Vector3(0,0,-1).applyAxisAngle(new THREE.Vector3(0,1,0),player.rotation.y);
-   cameraTarget.copy(cameraDesired).add(forward.multiplyScalar(8));
-  }
+  // Cámara 3D detrás del personaje, controlada arrastrando sobre el mundo.
+  const distance=7.2;
+  cameraOffset.set(
+   Math.sin(cameraYaw)*Math.cos(cameraPitch)*distance,
+   Math.sin(cameraPitch)*distance,
+   Math.cos(cameraYaw)*Math.cos(cameraPitch)*distance
+  );
+  cameraDesired.copy(player.position).add(cameraOffset);
+  cameraTarget.set(player.position.x,player.position.y+1.25,player.position.z);
   camera.position.lerp(cameraDesired,1-Math.pow(.00005,dt));
   camera.lookAt(cameraTarget);
  }
