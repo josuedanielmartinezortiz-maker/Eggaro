@@ -285,7 +285,10 @@ const playerState={x:0,z:34,speed:4};
 // Colisiones invisibles alineadas con el mapa de IMG-20260927-WA0019.jpg.
 // Coordenadas del plano: X izquierda/derecha, Z arriba/abajo.
 const collisionBoxes=[];
-function addCollision(x,z,w,d,pad=.35){
+let farmWorldBox=null;
+
+function addCollision(x,z,w,d,pad=.28){
+  if(w<.2 || d<.2)return;
   collisionBoxes.push({x,z,w:w+pad*2,d:d+pad*2});
 }
 function collidesAt(x,z){
@@ -300,50 +303,48 @@ function collidesAt(x,z){
 }
 function buildWorldCollisions(){
   collisionBoxes.length=0;
+  if(!farmModel)return;
 
-  // Límites del mapa.
-  addCollision(-30,0,1.2,100);
-  addCollision(30,0,1.2,100);
-  addCollision(0,-50,60,1.2);
-  addCollision(0,50,60,1.2);
+  farmWorldBox=new THREE.Box3().setFromObject(farmModel);
+  const min=farmWorldBox.min,max=farmWorldBox.max;
 
-  // Río inferior.
-  addCollision(0,45.5,58,9);
+  // Límites reales del GLB.
+  addCollision((min.x+max.x)/2,min.z-1.2,max.x-min.x+2.4,1.5,.2);
+  addCollision((min.x+max.x)/2,max.z+1.2,max.x-min.x+2.4,1.5,.2);
+  addCollision(min.x-1.2,(min.z+max.z)/2,1.5,max.z-min.z+2.4,.2);
+  addCollision(max.x+1.2,(min.z+max.z)/2,1.5,max.z-min.z+2.4,.2);
 
-  // Casa grande izquierda.
-  addCollision(-14.8,20.8,28,12);
-
-  // Casa pequeña inferior izquierda.
-  addCollision(-21.2,27.3,10,9);
-
-  // Casa/tienda inferior derecha.
-  addCollision(21.2,27.0,10,9);
-
-  // Pozo central.
-  addCollision(-1.0,18.0,7,7);
-
-  // Aserradero.
-  addCollision(-19.0,-11.5,14,11);
-
-  // Zona de ruinas.
-  addCollision(20.0,-10.0,12,13);
-
-  // Árbol de manzanas.
-  addCollision(14.0,-14.5,6,7);
-
-  // Campo de trigo.
-  addCollision(-8.8,-31.0,14,16);
-
-  // Madera/bloque superior izquierdo.
-  addCollision(-20.0,-29.0,9,8);
-
-  // Señal y zona prohibida superior derecha.
-  addCollision(15.5,-39.0,16,8);
-
-  // Escalera central superior: se puede subir por ella.
-  // No se bloquea para conservar el camino.
+  // Obstáculos del GLB. Se ignoran pisos/terrenos muy planos o gigantes.
+  farmModel.traverse(o=>{
+    if(!o.isMesh)return;
+    const b=new THREE.Box3().setFromObject(o);
+    const size=b.getSize(new THREE.Vector3());
+    const w=size.x,d=size.z,h=size.y;
+    if(w<.7 || d<.7 || h<.55)return;
+    if(w*d>180)return;
+    if(h<Math.min(w,d)*.12 && h<1.4)return;
+    addCollision((b.min.x+b.max.x)/2,(b.min.z+b.max.z)/2,w,d,.22);
+  });
 }
-buildWorldCollisions();
+
+function findSafeSpawn(){
+  if(!farmWorldBox){playerState.x=0;playerState.z=0;return;}
+  const min=farmWorldBox.min,max=farmWorldBox.max;
+  const candidates=[
+    new THREE.Vector3(0,0,0),
+    new THREE.Vector3(0,0,8),
+    new THREE.Vector3(0,0,16),
+    new THREE.Vector3(-8,0,8),
+    new THREE.Vector3(8,0,8),
+    new THREE.Vector3(0,0,-8)
+  ];
+  for(const p of candidates){
+    if(p.x>min.x+2 && p.x<max.x-2 && p.z>min.z+2 && p.z<max.z-2 && !collidesAt(p.x,p.z)){
+      playerState.x=p.x;playerState.z=p.z;return;
+    }
+  }
+  playerState.x=0;playerState.z=0;
+}
 
 const treeState={resistance:100,maxResistance:100,alive:true};
 let nearbyObject='';
@@ -473,18 +474,37 @@ highGrassGroup=makeHighGrass();
 async function loadFarmModel(){
   const gltf=await loader.loadAsync('./granja.glb');
   farmModel=gltf.scene;
-  farmModel.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+  farmModel.traverse(o=>{
+    if(o.isMesh){
+      o.castShadow=true;
+      o.receiveShadow=true;
+      o.frustumCulled=true;
+    }
+  });
+
   const box=new THREE.Box3().setFromObject(farmModel);
   const size=box.getSize(new THREE.Vector3());
   const center=box.getCenter(new THREE.Vector3());
   const maxSize=Math.max(size.x,size.z,0.001);
-  const scale=92/maxSize;
+
+  // Escala estable: el escenario cabe en el área jugable sin deformarse.
+  const scale=82/maxSize;
   farmModel.scale.setScalar(scale);
-  farmModel.position.x=-center.x*scale;
-  farmModel.position.z=-center.z*scale;
-  farmModel.position.y=-box.min.y*scale;
+  farmModel.position.set(
+    -center.x*scale,
+    -box.min.y*scale,
+    -center.z*scale
+  );
+
   scene.add(farmModel);
-  console.log('[EGGARO] Granja GLB cargada:',size.x,size.y,size.z);
+  buildWorldCollisions();
+  findSafeSpawn();
+
+  // Evita que el mapa quede enterrado o flotando por pequeñas diferencias.
+  const worldBox=new THREE.Box3().setFromObject(farmModel);
+  if(Math.abs(worldBox.min.y)>0.05)farmModel.position.y-=worldBox.min.y;
+
+  console.log('[EGGARO] Granja GLB cargada:',size.x,size.y,size.z,'escala',scale);
 }
 
 async function loadTree(){
@@ -554,31 +574,37 @@ for(const b of document.querySelectorAll('[data-key]')){
 let stumbleCooldown=0;
 function move(dt){
  if(!player)return;
- let x=0,z=0;
- if(keys.a||keys.arrowleft)x--;
- if(keys.d||keys.arrowright)x++;
- if(keys.w||keys.arrowup)z--;
- if(keys.s||keys.arrowdown)z++;
- if(!x&&!z)return;
- const l=Math.hypot(x,z);x/=l;z/=l;
- const inHighGrass=Math.abs(playerState.x)>5.2 && Math.abs(playerState.x)<28 && Math.abs(playerState.z)<30;
+ let inputX=0,inputZ=0;
+ if(keys.a||keys.arrowleft)inputX--;
+ if(keys.d||keys.arrowright)inputX++;
+ if(keys.w||keys.arrowup)inputZ--;
+ if(keys.s||keys.arrowdown)inputZ++;
+ if(!inputX&&!inputZ)return;
+
+ const len=Math.hypot(inputX,inputZ);
+ inputX/=len;inputZ/=len;
+
+ // Movimiento relativo a la cámara, estilo tercera persona.
+ const forwardX=-Math.sin(cameraYaw);
+ const forwardZ=-Math.cos(cameraYaw);
+ const rightX=Math.cos(cameraYaw);
+ const rightZ=-Math.sin(cameraYaw);
+ const x=rightX*inputX+forwardX*inputZ;
+ const z=rightZ*inputX+forwardZ*inputZ;
+
  const moveSpeed=playerState.speed;
  const nextX=playerState.x+x*moveSpeed*dt;
  const nextZ=playerState.z+z*moveSpeed*dt;
- // Resolver por ejes para que pueda deslizarse por las esquinas de los objetos.
+
  if(!collidesAt(nextX,playerState.z))playerState.x=nextX;
  if(!collidesAt(playerState.x,nextZ))playerState.z=nextZ;
- if(inHighGrass && stumbleCooldown<=0 && Math.random()<0.035*dt){
-  stumbleCooldown=1.1;
-  playerState.x-=x*.65;
-  playerState.z-=z*.65;
-  setStatus('🪢 ¡Te enredaste en la hierba alta!');
- }
- stumbleCooldown=Math.max(0,stumbleCooldown-dt);
- player.position.x=playerState.x;player.position.z=playerState.z;
+
+ player.position.x=playerState.x;
+ player.position.z=playerState.z;
+ player.rotation.y=Math.atan2(x,z);
+
  mapShadow.position.x=playerState.x;
  mapShadow.position.z=playerState.z;
- if(Math.abs(x)+Math.abs(z)>0) player.rotation.y=Math.atan2(x,z);
  updateActionButton();
 }
 
@@ -609,15 +635,20 @@ function animate(now){
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 (async()=>{
  try{
+  loading.textContent='🗺️ Cargando granja 3D…';
   await loadFarmModel();
+
+  loading.textContent='🐔 Cargando personaje…';
   await loadCharacter();
+
   farmHud.style.display='block';
   farmHud.textContent='🌱 Parcela lista · CULTIVAR';
   loading.style.display='none';
-  setStatus('🗺️ EGGARO · granja 3D + colisiones');
+  setStatus('🗺️ EGGARO · granja 3D lista');
  }catch(e){
-  loading.textContent='⚠️ Error cargando los modelos 3D';
-  console.error(e);
+  console.error('[EGGARO] Error de inicio:',e);
+  loading.textContent='⚠️ No se pudo cargar EGGARO. Revisa la consola.';
+  setStatus('⚠️ Error cargando el juego');
  }
  requestAnimationFrame(animate);
 })();
