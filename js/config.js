@@ -1,0 +1,1 @@
+export const GAME={mapPath:'./granja.glb',characterPath:'./micaela-optimized.glb',mapSize:82,playerHeight:2.6,playerSpeed:4,camera:{distance:8.5,minDistance:4,maxDistance:14,minPitch:.12,maxPitch:1.05}};export const INVENTORY=[['🌿','Pasto'],['🪵','Madera'],['🥚','Huevo'],['🌱','Semillas'],['🌾','Trigo'],['🍎','Manzana'],['🪨','Piedra'],['🟫','Tierra']];
