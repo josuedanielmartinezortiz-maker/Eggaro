@@ -21,7 +21,7 @@ function fitBottomPlane(root){
   if(pts.length<20)return;
 
   // Least-squares plane: y = ax + bz + c
-  let sx=sz=sxx=sxz=szz=sy=sxy=szy=0;
+  let sx=0,sz=0,sxx=0,sxz=0,szz=0,sy=0,sxy=0,szy=0;
   for(const p of pts){
     sx+=p.x; sz+=p.z; sy+=p.y;
     sxx+=p.x*p.x; sxz+=p.x*p.z; szz+=p.z*p.z;
