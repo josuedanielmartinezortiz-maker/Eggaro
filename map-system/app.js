@@ -46,7 +46,7 @@ const M = {
  leaf2:mat(0x568c42), leaf3:mat(0x759e4a), apple:mat(0xc52e28), metal:mat(0x777c7b,.45),
  glass:mat(0x9ccbd0,.18,{metalness:.2}), flower:mat(0xf3d9a0),
 };
-function mesh(geo, material, x=0,y=0,z=0, parent=objects){const o=new THREE.Mesh(geo,material);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o;}
+function mesh(geo, material, x=0,y=0,z=0, parent=objects){const o=new THREE.Mesh(geo,material);o.position.set(x,y,z);o.castShadow=false;o.receiveShadow=false;parent.add(o);return o;}
 function box(w,h,d,m,x=0,y=h/2,z=0,p=objects){return mesh(new THREE.BoxGeometry(w,h,d),m,x,y,z,p)}
 function cyl(rt,rb,h,m,x=0,y=h/2,z=0,seg=12,p=objects){return mesh(new THREE.CylinderGeometry(rt,rb,h,seg),m,x,y,z,p)}
 function sphere(r,m,x=0,y=0,z=0,p=objects,seg=10){return mesh(new THREE.SphereGeometry(r,seg,Math.max(6,seg-2)),m,x,y,z,p)}
