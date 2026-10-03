@@ -51,7 +51,7 @@ function box(w,h,d,m,x=0,y=h/2,z=0,p=objects){return mesh(new THREE.BoxGeometry(
 function cyl(rt,rb,h,m,x=0,y=h/2,z=0,seg=12,p=objects){return mesh(new THREE.CylinderGeometry(rt,rb,h,seg),m,x,y,z,p)}
 function sphere(r,m,x=0,y=0,z=0,p=objects,seg=10){return mesh(new THREE.SphereGeometry(r,seg,Math.max(6,seg-2)),m,x,y,z,p)}
 function group(x=0,y=0,z=0){const g=new THREE.Group();g.position.set(x,y,z);objects.add(g);return g}
-function ground(){const geo=new THREE.PlaneGeometry(140,105,48,36);const p=geo.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getY(i);p.setZ(i,.27*Math.sin(x*.12)*Math.cos(z*.13)+.12*Math.sin(z*.31));}geo.rotateX(-Math.PI/2);const o=mesh(geo,M.grass,0,0,0);o.receiveShadow=true;o.castShadow=false}
+function ground(){const geo=new THREE.PlaneGeometry(140,105,48,36);const p=geo.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getY(i);p.setZ(i,.55*Math.sin(x*.12)*Math.cos(z*.13)+.22*Math.sin(z*.31));}geo.rotateX(-Math.PI/2);const o=mesh(geo,M.grass,0,0,0);o.receiveShadow=true;o.castShadow=false}
 function path(x,z,w,d,rot=0){const g=group(x,.045,z);const edge=box(w+.45,.06,d+.5,M.pathEdge,0,0,0,g);edge.rotation.y=rot;const top=box(w,.065,d,M.dirt,0,.035,0,g);top.rotation.y=rot;return g}
 function pebble(x,y,z,r=.2,p=objects){const o=mesh(new THREE.DodecahedronGeometry(r,1),M.stone,x,y,z,p);o.scale.set(1.25,.65,.85);o.rotation.set(Math.random(),Math.random(),Math.random());return o}
 function grassTuft(x,z,p=objects){const g=new THREE.Group();for(let i=0;i<5;i++){const blade=mesh(new THREE.ConeGeometry(.07,.55+Math.random()*.35,4),i%2?M.grass2:M.leaf2,(Math.random()-.5)*.35,.25,(Math.random()-.5)*.35,g);blade.rotation.z=(Math.random()-.5)*.45}g.position.set(x,.04,z);p.add(g)}
@@ -76,7 +76,20 @@ function sealedHole(x,z){const g=hole(x,z);for(let i=0;i<6;i++){const b=box(.28,
 function dryApple(x,z){const g=group(x,.05,z);cyl(.42,.58,3.4,M.bark,0,1.7,0,9,g);for(let i=0;i<5;i++){const b=cyl(.13,.22,1.7,M.bark,0,2.4,0,7,g);b.position.set((Math.random()-.5)*1.5,2.5+Math.random()*.5,(Math.random()-.5)*1.5);b.rotation.z=(Math.random()-.5)*1.1;for(let j=0;j<2;j++)sphere(.16,M.apple,b.position.x+(Math.random()-.5)*.45,b.position.y-.15+Math.random()*.35,b.position.z+(Math.random()-.5)*.45,g,8)}return g}
 function markStatic(g){g.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=true;}});return g}
 function clearScene(){while(objects.children.length)objects.remove(objects.children[0])}
-function buildBase(){clearScene();map.length=0;ground();for(let x=-29;x<=-8;x+=2.5)for(let z=-34;z<=-9;z+=2.3)wheat(x+Math.random()*.55,z+Math.random()*.55);for(let x=-20;x<=-8;x+=2.8)for(let z=-30;z<-8;z+=3.1)deadWheat(x+Math.random()*.5,z+Math.random()*.5);ruinedMill(17,-4);ruinedSawmill(-19,-2);building(-14,9,12,8,5,'house');coop(17,10);well(-4,20);sealedHole(26,-34);dryApple(16,-24);
+function buildBase(){clearScene();map.length=0;ground();
+  // Camino principal + ramales para recuperar la lectura del mapa.
+  path(0,3,5.5,76,0);
+  path(-7,9,4.5,18,Math.PI/2);
+  path(9,-4,4.5,18,Math.PI/2);
+  // Relieve y elementos naturales.
+  water();
+  for(let i=0;i<18;i++)rock(-34+Math.random()*68,-36+Math.random()*68);
+  for(let i=0;i<22;i++)flowers(-34+Math.random()*68,-34+Math.random()*64);
+  for(let x=-29;x<=-8;x+=2.5)for(let z=-34;z<=-9;z+=2.3)wheat(x+Math.random()*.55,z+Math.random()*.55);
+  for(let x=-20;x<=-8;x+=2.8)for(let z=-30;z<-8;z+=3.1)deadWheat(x+Math.random()*.5,z+Math.random()*.5);
+  ruinedMill(17,-4);ruinedSawmill(-19,-2);building(-14,9,12,8,5,'house');coop(17,10);well(-4,20);
+  // La cueva vuelve a ser una estructura del mapa, con la entrada sellada.
+  cave(26,-34);dryApple(16,-24);
   // Solo los edificios reciben sombra: reduce mucho el coste en móviles.
   objects.traverse(o=>{if(o.isMesh && o.parent && o.parent.parent===objects)o.castShadow=false;});
 }
