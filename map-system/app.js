@@ -64,6 +64,8 @@ function sawmill(x,z){const g=group(x,0,z);box(6,2,4,M.wood2,0,1,0,g);gabledRoof
 function mill(x,z){const g=group(x,0,z);cyl(2.05,2.6,5,M.stone,0,2.5,0,16,g);cyl(2.12,2.12,.25,M.stoneDark,0,4.65,0,16,g);const roof=mesh(new THREE.ConeGeometry(2.65,2.2,8),M.roof,0,6,0,g);roof.rotation.y=Math.PI/8;box(.75,1.65,.12,M.dark,0,.83,2.08,g);for(const side of [-1,1])box(.75,.7,.1,M.glass,side*.85,3.25,1.83,g);const hub=sphere(.35,M.woodLight,0,4.6,2.18,g,10);for(let i=0;i<4;i++){const a=i*Math.PI/2;const arm=box(.3,4.3,.16,M.wood,Math.sin(a)*2.15,4.6+Math.cos(a)*2.15,2.25,g);arm.rotation.z=-a;const sail=box(1.2,2.5,.12,M.woodLight,Math.sin(a)*3.05,4.6+Math.cos(a)*3.05,2.28,g);sail.rotation.z=-a}return g}
 function well(x,z){const g=group(x,0,z);for(let i=0;i<16;i++){const a=i*Math.PI*2/16,stone=cyl(.27,.3,.62,M.stone,Math.cos(a)*1.25,.31,Math.sin(a)*1.25,8,g);stone.rotation.y=a}cyl(1.04,1.04,.1,M.water,0,.64,0,20,g);for(const s of [-1,1])box(.16,2.4,.16,M.wood,s*1.25,1.3,0,g);const beam=cyl(.12,.12,2.8,M.woodLight,0,2.3,0,8,g);beam.rotation.z=Math.PI/2;const roof=mesh(new THREE.ConeGeometry(1.5,.9,4),M.roof,0,3.1,0,g);roof.rotation.y=Math.PI/4;return g}
 function cave(x,z){const g=group(x,0,z);for(let i=0;i<9;i++){const a=Math.PI+i*Math.PI/8,r=3.1+Math.random()*.35,s=.75+Math.random()*.4;const b=mesh(new THREE.DodecahedronGeometry(s,1),i%2?M.stone:M.stoneDark,Math.cos(a)*r,2.6+Math.sin(a)*2.0,0,g);b.scale.set(1.15,1.2,.9)}box(4.7,3.1,1.2,M.dark,0,1.55,.25,g);box(3.8,2.65,.18,M.wood,-.1,1.35,.95,g);for(let i=0;i<5;i++)box(.1,2.7,.12,M.woodLight,-1.8+i*.85,1.35,1.08,g);box(4.2,.18,.2,M.woodLight,0,2.72,1.08,g);box(4.2,.18,.2,M.woodLight,0,.08,1.08,g);box(2.1,.65,.18,M.woodLight,0,4.8,.1,g);return g}
+function mountain(x,z){const g=group(x,0,z);const base=mesh(new THREE.ConeGeometry(17,10,12,4),M.grass2,0,4.5,0,g);base.scale.set(1.25,.8,1);const rockFace=mesh(new THREE.ConeGeometry(11,7,10,2),M.stoneDark,0,8,0,g);rockFace.scale.set(1.15,.75,.9);return g}
+function stairs(x,z,steps=9){const g=group(x,0,z);for(let i=0;i<steps;i++){const h=.35+i*.22;box(3.8,h,1.25,M.stone,x,h/2,z+i*1.05,g)}return g}
 function rock(x,z){const s=.5+Math.random()*1.1;const o=mesh(new THREE.DodecahedronGeometry(s,1),M.stone,x,s*.45,z);o.scale.set(1.2,.7,.9);o.rotation.set(Math.random()*.3,Math.random()*3,Math.random()*.3);return o}
 function flowers(x,z){const g=group(x,.03,z);for(let i=0;i<5;i++){const a=Math.random()*Math.PI*2,r=Math.random()*.5;const px=Math.cos(a)*r,pz=Math.sin(a)*r;cyl(.025,.03,.3,M.leaf2,px,.15,pz,5,g);for(let j=0;j<5;j++){const t=j*Math.PI*2/5;sphere(.065,j%2?M.flower:mat(0xf0c5a8),px+Math.cos(t)*.09,.34,pz+Math.sin(t)*.09,g,6)}sphere(.05,mat(0xe7b93b),px,.34,pz,g,6)}return g}
 
@@ -81,6 +83,9 @@ function buildBase(){clearScene();map.length=0;ground();
   path(0,3,5.5,76,0);
   path(-7,9,4.5,18,Math.PI/2);
   path(9,-4,4.5,18,Math.PI/2);
+  // Montaña de relieve + escalera para subirla.
+  mountain(-30,-2);
+  stairs(-7,-10,10);
   // Relieve y elementos naturales.
   water();
   for(let i=0;i<18;i++)rock(-34+Math.random()*68,-36+Math.random()*68);
