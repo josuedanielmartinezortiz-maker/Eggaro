@@ -78,25 +78,49 @@ function sealedHole(x,z){const g=hole(x,z);for(let i=0;i<6;i++){const b=box(.28,
 function dryApple(x,z){const g=group(x,.05,z);cyl(.42,.58,3.4,M.bark,0,1.7,0,9,g);for(let i=0;i<5;i++){const b=cyl(.13,.22,1.7,M.bark,0,2.4,0,7,g);b.position.set((Math.random()-.5)*1.5,2.5+Math.random()*.5,(Math.random()-.5)*1.5);b.rotation.z=(Math.random()-.5)*1.1;for(let j=0;j<2;j++)sphere(.16,M.apple,b.position.x+(Math.random()-.5)*.45,b.position.y-.15+Math.random()*.35,b.position.z+(Math.random()-.5)*.45,g,8)}return g}
 function markStatic(g){g.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=true;}});return g}
 function clearScene(){while(objects.children.length)objects.remove(objects.children[0])}
+
+function fence(x,z,len=5,rot=0){const g=group(x,0,z);for(let i=0;i<=Math.floor(len);i++){const p=box(.16,1.25,.16,M.wood,x-len/2+i,0.625,0,g);p.rotation.y=rot}for(const y of [.48,1.0]){const r=box(len,.12,.14,M.woodLight,0,y,0,g);r.rotation.y=rot}return g}
+function gate(x,z,rot=0){const g=fence(x,z,2.2,rot);g.rotation.y=rot;return g}
+function barn(x,z){const g=group(x,0,z);box(8,4.4,6,M.wood2,0,2.2,0,g);gabledRoof(8,6,5.4,M.roof,g);box(2.4,2.7,.16,M.wood,-1.5,1.35,3.08,g);box(2.4,2.7,.16,M.wood,1.5,1.35,3.08,g);return g}
+function hayBale(x,z){const g=group(x,0,z);box(1.5,.9,1.15,M.thatch,0,.45,0,g);for(let i=-2;i<=2;i++)box(.035,.78,.04,M.woodLight,i*.25,.45,.59,g);return g}
+function cart(x,z){const g=group(x,0,z);box(2.2,.45,1.35,M.wood2,0,.65,0,g);for(const s of [-1,1]){const w=cyl(.42,.42,.18,M.wood,s*.78,.45,0,14,g);w.rotation.z=Math.PI/2}box(.12,.12,1.8,M.woodLight,1.25,.72,0,g).rotation.z=.2;return g}
+function wheelbarrow(x,z){const g=group(x,0,z);box(1.5,.45,1.05,M.wood2,0,.65,0,g);const w=cyl(.3,.3,.18,M.wood,x-.9,.38,0,14,g);w.rotation.z=Math.PI/2;box(.12,1.3,.12,M.wood,-.7,.65,.48,g).rotation.z=.35;box(.12,1.3,.12,M.wood,-.7,.65,-.48,g).rotation.z=.35;return g}
+function barrel(x,z){const g=group(x,0,z);cyl(.55,.62,1.05,M.wood2,0,.53,0,12,g);for(let y of [.2,.55,.9]){const r=cyl(.59,.59,.07,M.metal,0,y,0,12,g);r.rotation.x=Math.PI/2}return g}
+function crate(x,z){const g=group(x,0,z);box(1.1,.85,1.1,M.wood2,0,.43,0,g);for(let a of [-1,1]){box(.08,.9,.08,M.woodLight,a*.38,.45,.56,g);box(.08,.9,.08,M.woodLight,a*.38,.45,-.56,g)}return g}
+function sack(x,z){const g=group(x,0,z);sphere(.58,M.woodLight,0,.6,0,g,9);box(.45,.12,.45,M.wood,-.02,1.05,0,g);return g}
+function signPost(x,z){const g=group(x,0,z);box(.16,1.8,.16,M.wood,0,.9,0,g);box(1.5,.55,.14,M.woodLight,0,1.55,0,g);return g}
+function scarecrow(x,z){const g=group(x,0,z);box(.16,2.4,.16,M.wood,0,1.2,0,g);box(2,.16,.16,M.wood,0,1.75,0,g);sphere(.32,M.thatch,0,2.35,0,g,9);return g}
+function stump(x,z){const g=group(x,0,z);cyl(.7,.85,.65,M.bark,0,.33,0,10,g);cyl(.58,.58,.06,M.woodLight,0,.68,0,10,g);return g}
+function logPile(x,z){const g=group(x,0,z);for(let i=0;i<5;i++){const l=cyl(.3,.34,2.6,M.bark,(i%2)*.12-.3,.32+i*.32,0,10,g);l.rotation.z=Math.PI/2}return g}
+function pine(x,z){const g=group(x,.05,z);cyl(.25,.38,2.2,M.bark,0,1.1,0,8,g);for(let i=0;i<3;i++)mesh(new THREE.ConeGeometry(1.35-i*.25,1.9,8),[M.leaf,M.leaf2,M.leaf3][i],0,2.0+i*.75,0,g);return g}
+function bush(x,z){const g=group(x,.04,z);for(let i=0;i<5;i++)sphere(.65,M.leaf2,(Math.random()-.5)*1.2,.55+Math.random()*.25,(Math.random()-.5)*1.2,g,8);return g}
+function mushroom(x,z){const g=group(x,.03,z);cyl(.09,.12,.45,M.woodLight,0,.23,0,7,g);sphere(.32,M.apple,0,.5,0,g,8);return g}
+function pumpkin(x,z){const g=group(x,.03,z);sphere(.48,M.thatch,0,.45,0,g,9);for(let i=0;i<5;i++){const a=i*Math.PI/5;const rib=box(.04,.7,.7,M.woodLight,Math.cos(a)*.3,.45,Math.sin(a)*.3,g);rib.rotation.z=a}return g}
+function corn(x,z){const g=group(x,.04,z);for(let i=0;i<7;i++){const h=1.5+Math.random()*.5;const s=cyl(.035,.045,h,M.grass2,(Math.random()-.5)*.7,h/2,(Math.random()-.5)*.7,5,g);s.rotation.z=(Math.random()-.5)*.18}return g}
+function trough(x,z){const g=group(x,0,z);box(2.4,.65,1.0,M.wood2,0,.33,0,g);box(2.0,.18,.7,M.water,0,.67,0,g);return g}
+function lantern(x,z){const g=group(x,0,z);box(.1,2.2,.1,M.wood,0,1.1,0,g);box(.55,.7,.55,M.metal,0,2.0,0,g);sphere(.18,M.thatch,0,2.0,0,g,8);return g}
+function bench(x,z){const g=group(x,0,z);box(2.2,.18,.65,M.woodLight,0,1.0,0,g);for(const s of [-.8,.8])box(.14,1,.14,M.wood,s,.5,0,g);return g}
+function webProps30(){
+  // 30 piezas nuevas inspiradas en packs gratuitos/CC0 de granja y naturaleza.
+  barn(-20,8); fence(-12,13,7,0); gate(-8,13,0); hayBale(-15,16); cart(-6,17);
+  wheelbarrow(-1,17); barrel(3,17); crate(6,17); sack(9,17); signPost(12,13);
+  scarecrow(-12,-18); stump(-5,-20); logPile(-1,-21); pine(31,-20); bush(34,-17);
+  mushroom(30,-15); pumpkin(-18,-24); corn(-14,-26); trough(20,14); lantern(22,9);
+  bench(5,22); tree(30,8); tree(35,12); tree(-35,18); rock(-31,14); flowers(-27,17);
+  wheat(-21,-16); deadWheat(-18,-13); mill(18,-4); coop(17,10);
+  well(-4,20);
+}
+
 function buildBase(){clearScene();map.length=0;ground();
-  // Camino principal + ramales para recuperar la lectura del mapa.
-  path(0,3,5.5,76,0);
-  path(-7,9,4.5,18,Math.PI/2);
-  path(9,-4,4.5,18,Math.PI/2);
-  // Montaña de relieve + escalera para subirla.
-  mountain(-30,-2);
-  stairs(-7,-10,10);
-  // Relieve y elementos naturales.
-  water();
-  for(let i=0;i<18;i++)rock(-34+Math.random()*68,-36+Math.random()*68);
-  for(let i=0;i<22;i++)flowers(-34+Math.random()*68,-34+Math.random()*64);
-  for(let x=-29;x<=-8;x+=2.5)for(let z=-34;z<=-9;z+=2.3)wheat(x+Math.random()*.55,z+Math.random()*.55);
-  for(let x=-20;x<=-8;x+=2.8)for(let z=-30;z<-8;z+=3.1)deadWheat(x+Math.random()*.5,z+Math.random()*.5);
-  ruinedMill(17,-4);ruinedSawmill(-19,-2);building(-14,9,12,8,5,'house');coop(17,10);well(-4,20);
-  // La cueva vuelve a ser una estructura del mapa, con la entrada sellada.
-  cave(26,-34);dryApple(16,-24);
-  // Solo los edificios reciben sombra: reduce mucho el coste en móviles.
-  objects.traverse(o=>{if(o.isMesh && o.parent && o.parent.parent===objects)o.castShadow=false;});
+  // Terreno principal conservado: camino, relieve, agua, montaña, escalera y cueva.
+  path(0,3,5.5,76,0); path(-7,9,4.5,18,Math.PI/2); path(9,-4,4.5,18,Math.PI/2);
+  mountain(-30,-2); stairs(-30,-18,12); water();
+  // Decoración y props: 30 piezas nuevas.
+  webProps30();
+  cave(26,-34); dryApple(16,-24);
+  for(let i=0;i<12;i++)rock(-34+Math.random()*68,-30+Math.random()*58);
+  for(let i=0;i<14;i++)flowers(-34+Math.random()*68,-30+Math.random()*58);
+  objects.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=true;}});
 }
 function add(type,x,z){const before=objects.children.length;let o=null;if(type==='wheat')o=wheat(x,z);else if(type==='deadWheat')o=deadWheat(x,z);else if(type==='ruinedMill')o=ruinedMill(x,z);else if(type==='ruinedSawmill')o=ruinedSawmill(x,z);else if(type==='house')o=building(x,z,8,6,4.5);else if(type==='coop')o=coop(x,z);else if(type==='well')o=well(x,z);else if(type==='hole')o=hole(x,z);else if(type==='sealedHole')o=sealedHole(x,z);else if(type==='dryApple')o=dryApple(x,z);if(o){for(let i=before;i<objects.children.length;i++)objects.children[i].userData.editable=true;map.push({type,x,z});toast(type+' colocado')}}
 function toast(t){const e=document.getElementById('toast');if(!e)return;e.textContent=t;e.style.opacity=1;clearTimeout(window.egToast);window.egToast=setTimeout(()=>e.style.opacity=0,1000)}
