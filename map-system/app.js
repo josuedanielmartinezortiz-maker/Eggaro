@@ -52,10 +52,11 @@ function cyl(rt,rb,h,m,x=0,y=h/2,z=0,seg=12,p=objects){return mesh(new THREE.Cyl
 function sphere(r,m,x=0,y=0,z=0,p=objects,seg=10){return mesh(new THREE.SphereGeometry(r,seg,Math.max(6,seg-2)),m,x,y,z,p)}
 function group(x=0,y=0,z=0){const g=new THREE.Group();g.position.set(x,y,z);objects.add(g);return g}
 function ground(){const geo=new THREE.PlaneGeometry(140,105,48,36);const p=geo.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getY(i);p.setZ(i,.55*Math.sin(x*.12)*Math.cos(z*.13)+.22*Math.sin(z*.31));}geo.rotateX(-Math.PI/2);const o=mesh(geo,M.grass,0,0,0);o.receiveShadow=true;o.castShadow=false}
-function path(x,z,w,d,rot=0){const g=group(x,.045,z);const edge=box(w+.45,.06,d+.5,M.pathEdge,0,0,0,g);edge.rotation.y=rot;const top=box(w,.065,d,M.dirt,0,.035,0,g);top.rotation.y=rot;return g}
+function path(x,z,w,d,rot=0){const g=group(x,.045,z);g.rotation.y=rot;box(w+.55,.06,d+.5,M.pathEdge,0,0,0,g);box(w,.065,d,M.dirt,0,.035,0,g);return g}
+function curvedPath(points,width=4.2){for(let i=0;i<points.length-1;i++){const a=points[i],b=points[i+1],mid=a.clone().lerp(b,.5),len=a.distanceTo(b),angle=Math.atan2(b.x-a.x,b.z-a.z);path(mid.x,mid.z,width,len,angle)}}
 function pebble(x,y,z,r=.2,p=objects){const o=mesh(new THREE.DodecahedronGeometry(r,1),M.stone,x,y,z,p);o.scale.set(1.25,.65,.85);o.rotation.set(Math.random(),Math.random(),Math.random());return o}
 function grassTuft(x,z,p=objects){const g=new THREE.Group();for(let i=0;i<5;i++){const blade=mesh(new THREE.ConeGeometry(.07,.55+Math.random()*.35,4),i%2?M.grass2:M.leaf2,(Math.random()-.5)*.35,.25,(Math.random()-.5)*.35,g);blade.rotation.z=(Math.random()-.5)*.45}g.position.set(x,.04,z);p.add(g)}
-function water(){const g=new THREE.PlaneGeometry(140,19,40,8);const o=mesh(g,M.water,0,.07,42);o.rotation.x=-Math.PI/2;o.castShadow=false;for(let i=0;i<42;i++){const x=(Math.random()-.5)*70,z=34+Math.random()*15;pebble(x,.12,z,.18+Math.random()*.38)}for(let i=0;i<30;i++)grassTuft((Math.random()-.5)*68,32+Math.random()*3)}
+function water(){const g=group(0,.05,0);const pts=[];for(let i=0;i<=12;i++)pts.push(new THREE.Vector3(34+Math.sin(i*.72)*4.5,.0,25+i*1.75));for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1],mid=a.clone().lerp(b,.5),len=a.distanceTo(b),seg=mesh(new THREE.PlaneGeometry(5.5,len),M.water,mid.x,.08,mid.z,g);seg.rotation.x=-Math.PI/2;seg.rotation.z=-Math.atan2(b.x-a.x,b.z-a.z)}for(let i=0;i<18;i++)grassTuft(29+Math.random()*9,25+Math.random()*22);return g}
 function wheat(x,z){const g=group(x,.06,z);for(let i=0;i<9;i++){const sx=(Math.random()-.5)*1.25,sz=(Math.random()-.5)*1.25,h=1.15+Math.random()*.8;const stem=cyl(.025,.035,h,M.wheat,sx,h/2,sz,5,g);stem.rotation.z=(Math.random()-.5)*.12;stem.rotation.x=(Math.random()-.5)*.1;const head=sphere(.105,M.thatch,sx,h+.04,sz,g,7);head.scale.set(.65,1.8,.65);const grain=sphere(.05,M.thatch,sx,h+.08,sz,g,6);grain.scale.set(.7,1.35,.7)}return g}
 function tree(x,z,appleTree=false){const g=group(x,.05,z);cyl(.34,.48,2.6,M.bark,0,1.3,0,9,g);for(let i=0;i<4;i++){const b=cyl(.13,.24,1.2,M.bark,0,2.1,0,7,g);b.position.set((Math.random()-.5)*.8,2.1+Math.random()*.5,(Math.random()-.5)*.8);b.rotation.z=(Math.random()-.5)*.9}for(let i=0;i<9;i++){const a=i*Math.PI*2/9,rad=.85+Math.random()*.5,y=2.7+Math.random()*1.1,s=.85+Math.random()*.45;const crown=mesh(new THREE.IcosahedronGeometry(s,1),[M.leaf,M.leaf2,M.leaf3][i%3],Math.cos(a)*rad,y,Math.sin(a)*rad,g);crown.scale.y=.82;crown.rotation.set(Math.random(),Math.random(),Math.random());if(appleTree&&i%2===0)for(let j=0;j<3;j++)sphere(.12,M.apple,crown.position.x+(Math.random()-.5)*.9,crown.position.y-.2+Math.random()*.25,crown.position.z+(Math.random()-.5)*.9,g,8)}return g}
 function gabledRoof(w,d,h,m,p){const g=new THREE.Group();const ridge=box(w,.18,.2,m,0,h,0,g);for(const side of [-1,1]){const panel=box(w*.72,.16,d*1.02,m,0,h-.42,side*d*.25,g);panel.rotation.x=side*.65}p.add(g);return g}
@@ -64,8 +65,8 @@ function sawmill(x,z){const g=group(x,0,z);box(6,2,4,M.wood2,0,1,0,g);gabledRoof
 function mill(x,z){const g=group(x,0,z);cyl(2.05,2.6,5,M.stone,0,2.5,0,16,g);cyl(2.12,2.12,.25,M.stoneDark,0,4.65,0,16,g);const roof=mesh(new THREE.ConeGeometry(2.65,2.2,8),M.roof,0,6,0,g);roof.rotation.y=Math.PI/8;box(.75,1.65,.12,M.dark,0,.83,2.08,g);for(const side of [-1,1])box(.75,.7,.1,M.glass,side*.85,3.25,1.83,g);const hub=sphere(.35,M.woodLight,0,4.6,2.18,g,10);for(let i=0;i<4;i++){const a=i*Math.PI/2;const arm=box(.3,4.3,.16,M.wood,Math.sin(a)*2.15,4.6+Math.cos(a)*2.15,2.25,g);arm.rotation.z=-a;const sail=box(1.2,2.5,.12,M.woodLight,Math.sin(a)*3.05,4.6+Math.cos(a)*3.05,2.28,g);sail.rotation.z=-a}return g}
 function well(x,z){const g=group(x,0,z);for(let i=0;i<16;i++){const a=i*Math.PI*2/16,stone=cyl(.27,.3,.62,M.stone,Math.cos(a)*1.25,.31,Math.sin(a)*1.25,8,g);stone.rotation.y=a}cyl(1.04,1.04,.1,M.water,0,.64,0,20,g);for(const s of [-1,1])box(.16,2.4,.16,M.wood,s*1.25,1.3,0,g);const beam=cyl(.12,.12,2.8,M.woodLight,0,2.3,0,8,g);beam.rotation.z=Math.PI/2;const roof=mesh(new THREE.ConeGeometry(1.5,.9,4),M.roof,0,3.1,0,g);roof.rotation.y=Math.PI/4;return g}
 function cave(x,z){const g=group(x,0,z);for(let i=0;i<9;i++){const a=Math.PI+i*Math.PI/8,r=3.1+Math.random()*.35,s=.75+Math.random()*.4;const b=mesh(new THREE.DodecahedronGeometry(s,1),i%2?M.stone:M.stoneDark,Math.cos(a)*r,2.6+Math.sin(a)*2.0,0,g);b.scale.set(1.15,1.2,.9)}box(4.7,3.1,1.2,M.dark,0,1.55,.25,g);box(3.8,2.65,.18,M.wood,-.1,1.35,.95,g);for(let i=0;i<5;i++)box(.1,2.7,.12,M.woodLight,-1.8+i*.85,1.35,1.08,g);box(4.2,.18,.2,M.woodLight,0,2.72,1.08,g);box(4.2,.18,.2,M.woodLight,0,.08,1.08,g);box(2.1,.65,.18,M.woodLight,0,4.8,.1,g);return g}
-function mountain(x,z){const g=group(x,0,z);const base=mesh(new THREE.ConeGeometry(17,10,12,4),M.grass2,0,4.5,0,g);base.scale.set(1.25,.8,1);const rockFace=mesh(new THREE.ConeGeometry(11,7,10,2),M.stoneDark,0,8,0,g);rockFace.scale.set(1.15,.75,.9);return g}
-function stairs(x,z,steps=9){const g=group(x,0,z);for(let i=0;i<steps;i++){const h=.35+i*.22;box(3.8,h,1.25,M.stone,x,h/2,z+i*1.05,g)}return g}
+function mountain(x,z){const g=group(x,0,z);const layers=[[18,5.5,M.grass2,0],[14,4.5,M.grass,2.8],[10,3.8,M.grass2,5.2],[6.5,3.2,M.stoneDark,7.3]];for(const [r,h,m,y] of layers){const hill=mesh(new THREE.CylinderGeometry(r*.72,r,h,12,3),m,0,y+h/2,0,g);hill.scale.z=.82;}return g}
+function stairs(x,z,steps=12,rot=0){const g=group(x,0,z);g.rotation.y=rot;for(let i=0;i<steps;i++){const h=.28+i*.16;box(4.2,h,1.15,M.stone,0,h/2,i*1.0,g);box(3.8,.08,1.18,M.stoneDark,0,h+.02,i*1.0,g)}return g}
 function rock(x,z){const s=.5+Math.random()*1.1;const o=mesh(new THREE.DodecahedronGeometry(s,1),M.stone,x,s*.45,z);o.scale.set(1.2,.7,.9);o.rotation.set(Math.random()*.3,Math.random()*3,Math.random()*.3);return o}
 function flowers(x,z){const g=group(x,.03,z);for(let i=0;i<5;i++){const a=Math.random()*Math.PI*2,r=Math.random()*.5;const px=Math.cos(a)*r,pz=Math.sin(a)*r;cyl(.025,.03,.3,M.leaf2,px,.15,pz,5,g);for(let j=0;j<5;j++){const t=j*Math.PI*2/5;sphere(.065,j%2?M.flower:mat(0xf0c5a8),px+Math.cos(t)*.09,.34,pz+Math.sin(t)*.09,g,6)}sphere(.05,mat(0xe7b93b),px,.34,pz,g,6)}return g}
 
@@ -112,14 +113,24 @@ function webProps30(){
 }
 
 function buildBase(){clearScene();map.length=0;ground();
-  // Terreno principal conservado: camino, relieve, agua, montaña, escalera y cueva.
-  path(0,3,5.5,76,0); path(-7,9,4.5,18,Math.PI/2); path(9,-4,4.5,18,Math.PI/2);
-  mountain(-30,-2); stairs(-30,-18,12); water();
-  // Decoración y props: 30 piezas nuevas.
-  webProps30();
-  cave(26,-34); dryApple(16,-24);
-  for(let i=0;i<12;i++)rock(-34+Math.random()*68,-30+Math.random()*58);
-  for(let i=0;i<14;i++)flowers(-34+Math.random()*68,-30+Math.random()*58);
+  path(0,4,5.2,18,0);
+  curvedPath([new THREE.Vector3(0,4,4),new THREE.Vector3(-7,8,10),new THREE.Vector3(-14,11,15),new THREE.Vector3(-19,13,18)],4.1);
+  curvedPath([new THREE.Vector3(0,4,-3),new THREE.Vector3(6,-1,-9),new THREE.Vector3(13,-7,-15),new THREE.Vector3(18,-12,-20)],4.1);
+  curvedPath([new THREE.Vector3(-2,4,3),new THREE.Vector3(-9,0,-3),new THREE.Vector3(-15,-5,-7),new THREE.Vector3(-21,-10,-9)],3.8);
+  mountain(-30,4);stairs(-30,-13,13,0);water();
+  for(let row=0;row<5;row++){const z=-25+row*3.1;for(let col=0;col<7;col++)wheat(-20+col*3+(row%2)*.7+(Math.random()-.5)*.7,z+(Math.random()-.5)*.7)}
+  for(let i=0;i<10;i++)deadWheat(-21+Math.random()*20,-29+Math.random()*9);
+  building(-5,9,10,7,4.8,'house');coop(13,8);well(-1,15);barn(-18,11);
+  hayBale(-13,16);hayBale(-10,16);cart(6,14);barrel(9,14);crate(11,14);sack(14,14);
+  ruinedMill(20,-3);ruinedSawmill(-19,-2);stump(-12,-7);logPile(-8,-8);scarecrow(-14,-20);
+  cave(25,-28);for(let i=0;i<8;i++){const a=i*Math.PI/7-.2;rock(25+Math.cos(a)*5,-28+Math.sin(a)*4)}
+  dryApple(15,-22);
+  const forest=[[-38,-30],[-34,-20],[-38,-8],[-37,7],[-35,20],[-28,28],[-17,29],[-5,31],[8,30],[20,29],[32,27],[39,18],[39,5],[37,-8],[35,-20],[31,-34],[16,-37],[1,-37],[-14,-37],[-28,-35]];
+  forest.forEach(([x,z],i)=>{tree(x,z,i%4===0);if(i%3===0)pine(x+2,z+2)});
+  [[-30,22],[-23,25],[-12,27],[2,27],[15,25],[28,22],[34,14],[-34,13],[-31,-3],[32,-12],[28,-22],[-27,-14]].forEach(([x,z])=>bush(x,z));
+  for(let i=0;i<16;i++){const x=-33+Math.random()*66,z=-32+Math.random()*60;if(Math.abs(x)<8&&Math.abs(z)<8)continue;rock(x,z)}
+  for(let i=0;i<12;i++)flowers(-32+Math.random()*64,-30+Math.random()*55);
+  fence(-25,8,7,Math.PI/2);gate(-21,8,Math.PI/2);trough(18,12);lantern(-7,12);lantern(8,11);bench(2,18);pumpkin(-24,-17);pumpkin(-21,-17);corn(-16,-18);
   objects.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=true;}});
 }
 function add(type,x,z){const before=objects.children.length;let o=null;if(type==='wheat')o=wheat(x,z);else if(type==='deadWheat')o=deadWheat(x,z);else if(type==='ruinedMill')o=ruinedMill(x,z);else if(type==='ruinedSawmill')o=ruinedSawmill(x,z);else if(type==='house')o=building(x,z,8,6,4.5);else if(type==='coop')o=coop(x,z);else if(type==='well')o=well(x,z);else if(type==='hole')o=hole(x,z);else if(type==='sealedHole')o=sealedHole(x,z);else if(type==='dryApple')o=dryApple(x,z);if(o){for(let i=before;i<objects.children.length;i++)objects.children[i].userData.editable=true;map.push({type,x,z});toast(type+' colocado')}}
