@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 const $ = s => document.querySelector(s);
 const canvas = $("#scene"), stage = $("#stage"), intro = $("#intro");
@@ -137,6 +138,65 @@ for (const x of [-.48, .48]) {
 }
 character.position.set(0, 0, 8); character.visible = false;
 
+// Carga los diseños originales de Mike y Micaela del repositorio GAMERPRO GAME.
+const heroMike = new THREE.Group();
+const heroMicaela = new THREE.Group();
+heroMike.name = "Mike_modelo_original";
+heroMicaela.name = "Micaela_modelo_original";
+scene.add(heroMike, heroMicaela);
+heroMike.visible = heroMicaela.visible = false;
+const mixers = [];
+const modelLoader = new GLTFLoader();
+const modelURLs = {
+  mike: "https://raw.githubusercontent.com/josuedanielmartinezortiz-maker/Game/main/3D/mike.glb",
+  micaela: "https://raw.githubusercontent.com/josuedanielmartinezortiz-maker/Game/main/3D/micaela.glb"
+};
+const modelReady = { mike: false, micaela: false };
+
+async function loadDesignedCharacter(name, wrapper) {
+  try {
+    const gltf = await modelLoader.loadAsync(modelURLs[name]);
+    const model = gltf.scene;
+    model.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(model);
+    const center = bounds.getCenter(new THREE.Vector3());
+    const size = bounds.getSize(new THREE.Vector3());
+    if (!Number.isFinite(size.y) || size.y < .01) throw new Error("Modelo sin altura válida");
+    const scale = 2.15 / size.y;
+    model.scale.setScalar(scale);
+    model.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
+    model.traverse(object => {
+      if (!object.isMesh) return;
+      object.castShadow = false;
+      object.receiveShadow = false;
+      if (object.material) {
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        for (const material of materials) {
+          if ("roughness" in material) material.roughness = Math.max(material.roughness ?? .7, .45);
+        }
+      }
+    });
+    wrapper.add(model);
+    wrapper.rotation.y = Math.PI;
+    if (gltf.animations?.length) {
+      const mixer = new THREE.AnimationMixer(model);
+      const clip = gltf.animations.find(item => /walk|caminar|idle|mixamo/i.test(item.name)) || gltf.animations[0];
+      mixer.clipAction(clip).play();
+      mixers.push(mixer);
+    }
+    modelReady[name] = true;
+    heroMike.visible = modelReady.mike;
+    heroMicaela.visible = modelReady.micaela;
+    character.visible = !(modelReady.mike || modelReady.micaela);
+  } catch (error) {
+    console.warn("No se pudo cargar el modelo original de " + name, error);
+  }
+}
+Promise.all([
+  loadDesignedCharacter("mike", heroMike),
+  loadDesignedCharacter("micaela", heroMicaela)
+]);
+
 // Camera and actor keyframes share the same timeline. Each target is close to the action.
 const shots = [
   { at: 0,  name: "PLANO 01 · ESTABLECIMIENTO", cam: [0, 8, 29],    look: [0, 2, -25],   actor: [0, 0, 8] },
@@ -149,9 +209,27 @@ const shots = [
   { at: 24, name: "PLANO 05 · CABAÑA",           cam: [1.2, 4.8, -19],look: [-1.6, 2.2, -32],actor: [0, 0, -27] }
 ];
 const clamp01 = n => THREE.MathUtils.clamp(n, 0, 1);
-const smooth = t => t * t * (3 - 2 * t);
-const smoother = t => t * t * t * (t * (t * 6 - 15) + 10);
 const vec = a => new THREE.Vector3(a[0], a[1], a[2]);
+
+// Hermite cúbico con tangentes temporales: mantiene la velocidad entre keyframes.
+function sampleVector(property, index, t) {
+  const previous = shots[Math.max(0, index - 1)];
+  const a = shots[index], b = shots[index + 1];
+  const next = shots[Math.min(shots.length - 1, index + 2)];
+  const span = Math.max(.001, b.at - a.at);
+  const slopeA = index === 0
+    ? vec(b[property]).sub(vec(a[property])).multiplyScalar(1 / span)
+    : vec(b[property]).sub(vec(previous[property])).multiplyScalar(1 / Math.max(.001, b.at - previous.at));
+  const slopeB = index + 1 === shots.length - 1
+    ? vec(b[property]).sub(vec(a[property])).multiplyScalar(1 / span)
+    : vec(next[property]).sub(vec(a[property])).multiplyScalar(1 / Math.max(.001, next.at - a.at));
+  const p0 = vec(a[property]), p1 = vec(b[property]);
+  const t2 = t * t, t3 = t2 * t;
+  return p0.multiplyScalar(2*t3 - 3*t2 + 1)
+    .addScaledVector(slopeA, (t3 - 2*t2 + t) * span)
+    .addScaledVector(p1, -2*t3 + 3*t2)
+    .addScaledVector(slopeB, (t3 - t2) * span);
+}
 
 function sampleShot(time) {
   let i = shots.length - 2;
@@ -160,10 +238,9 @@ function sampleShot(time) {
   }
   const a = shots[i], b = shots[i + 1];
   const raw = clamp01((time - a.at) / Math.max(.001, b.at - a.at));
-  const t = (i === 0 || i === shots.length - 2) ? smoother(raw) : smooth(raw);
-  const lerp = (p, q) => vec(p).lerp(vec(q), t);
   const label = time < 4 ? shots[0] : time < 7 ? shots[2] : time < 14 ? shots[3] : time < 19 ? shots[5] : shots[6];
-  return { cam: lerp(a.cam, b.cam), look: lerp(a.look, b.look), actor: lerp(a.actor, b.actor), show: time >= 4.35, shot: label };
+  return { cam: sampleVector("cam", i, raw), look: sampleVector("look", i, raw),
+    actor: sampleVector("actor", i, raw), show: time >= 4.35, shot: label };
 }
 
 let elapsed = 0, playing = false, lastStamp = 0;
@@ -174,11 +251,23 @@ function setTime(time) {
   camera.position.copy(pose.cam);
   camera.lookAt(pose.look);
   character.position.copy(pose.actor);
-  character.visible = pose.show;
-  const walk = elapsed >= 5 && elapsed <= 18 ? Math.sin((elapsed - 5) * 7.2) : 0;
-  legs[0].rotation.x = walk * .58; legs[1].rotation.x = -walk * .58;
-  arms[0].rotation.x = -walk * .38; arms[1].rotation.x = walk * .38;
+  character.visible = pose.show && !(modelReady.mike || modelReady.micaela);
+  const walking = elapsed >= 5 && elapsed <= 23.5;
+  const stride = walking ? Math.sin((elapsed - 5) * 7.6) : 0;
+  legs[0].rotation.x = stride * .58; legs[1].rotation.x = -stride * .58;
+  arms[0].rotation.x = -stride * .38; arms[1].rotation.x = stride * .38;
   torso.rotation.y = elapsed >= 17 ? -.12 : 0;
+
+  const forward = new THREE.Vector3().subVectors(pose.look, pose.cam);
+  forward.y = 0;
+  if (forward.lengthSq() > .001) forward.normalize();
+  const side = new THREE.Vector3(forward.z, 0, -forward.x).normalize();
+  heroMike.position.copy(pose.actor).addScaledVector(side, -.68);
+  heroMicaela.position.copy(pose.actor).addScaledVector(side, .68);
+  heroMike.position.y += walking ? Math.abs(Math.sin((elapsed - 5) * 7.6)) * .045 : Math.sin(elapsed * 1.6) * .012;
+  heroMicaela.position.y += walking ? Math.abs(Math.sin((elapsed - 5) * 7.6 + .18)) * .04 : Math.sin(elapsed * 1.6 + .2) * .008;
+  heroMike.visible = pose.show && modelReady.mike;
+  heroMicaela.visible = pose.show && modelReady.micaela;
   shotLabel.textContent = pose.shot.name;
   timecode.textContent = "00:" + String(Math.floor(elapsed)).padStart(2, "0");
   statusLabel.textContent = playing ? "PLAY" : elapsed >= DURATION ? "FIN" : "PAUSA";
@@ -217,6 +306,7 @@ function frame(stamp) {
   requestAnimationFrame(frame);
   if (!lastStamp) lastStamp = stamp;
   const dt = Math.min((stamp - lastStamp) / 1000, .05); lastStamp = stamp;
+  for (const mixer of mixers) mixer.update(dt);
   if (playing) {
     const next = elapsed + dt;
     if (next >= DURATION) {

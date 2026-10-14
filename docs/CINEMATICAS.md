@@ -1,38 +1,36 @@
 # Laboratorio de cinemáticas EGGARO
 
-## Estado del prototipo
+## Objetivo
 
-La secuencia continúa usando Three.js y JavaScript para ejecutarse directamente en GitHub Pages. Esta revisión corrige el encuadre de cámara, la progresión de planos, el formato móvil y el coste de dibujar el escenario.
+Laboratorio web basado en Three.js, conservando el arranque sencillo de GitHub Pages y usando los diseños originales de Mike y Micaela del repositorio GAMERPRO GAME.
 
-## Cambios realizados
+## Cambios de esta etapa
 
-- Se reorganizaron los keyframes para que los objetivos de cámara estén cerca de la acción, en vez de apuntar detrás del personaje.
-- La presentación, el seguimiento y el plano final ahora usan trayectorias coordinadas con el movimiento del personaje.
-- Se ajustó el campo de visión en pantallas verticales.
-- Los árboles y las flores usan `THREE.InstancedMesh`: conservan variaciones de tamaño/color sin crear cientos de mallas independientes.
-- Se redujo el coste de sombras y resolución en móviles.
-- Se corrigió el reinicio desde el final y el estado de reproducción al arrastrar la línea de tiempo.
+- Carga los modelos originales `3D/mike.glb` y `3D/micaela.glb`, normaliza su altura y los coloca sobre una trayectoria común.
+- Si los GLB contienen animaciones, reproduce un clip mediante `AnimationMixer`; añade un movimiento secundario discreto para evitar una pose estática.
+- Cámara, objetivo y personajes usan interpolación Hermite cúbica con tangentes temporales, reduciendo los frenados bruscos en cada keyframe.
+- Árboles y flores siguen usando `THREE.InstancedMesh` para reducir llamadas de dibujo.
+- El muñeco geométrico permanece como respaldo mientras no cargue ninguno de los modelos originales.
 
 ## Probar
 
-1. Abre GitHub Pages y recarga la página.
-2. Pulsa **Iniciar cinemática**.
-3. Prueba pausa, reinicio y la barra de tiempo.
-4. En el teléfono, prueba orientación vertical y horizontal.
+1. Abre [EGGARO Pages](https://josuedanielmartinezortiz-maker.github.io/Eggaro/) con conexión a internet.
+2. Espera a que carguen los modelos externos y pulsa **Iniciar cinemática**.
+3. Prueba pausa, reinicio, línea de tiempo y orientación vertical/horizontal.
 
 ## Arquitectura
 
 - `index.html`: interfaz y carga de módulos.
-- `src/main.js`: escenario procedural, instancias, cámara, personaje y reloj de secuencia.
+- `src/main.js`: escena, carga GLB, cámara, animación y reloj.
 - `src/styles.css`: interfaz adaptable.
-- `assets/`: futuro espacio para modelos, texturas y audio.
+- Los GLB se mantienen en el repositorio original `Game/3D/` para no duplicar archivos grandes.
 
-## Por qué no se añadió C++ en esta corrección
+## Rendimiento y C++
 
-El problema principal era de composición de cámara y de exceso de mallas separadas, no de cálculos matemáticos pesados. C++ tendría que compilarse a WebAssembly y requeriría un flujo de compilación/carga; no arreglaría por sí mismo el encuadre. Primero conviene medir el rendimiento de esta versión. Si aparece un cálculo costoso concreto, se podrá probar un módulo WASM aislado sin reemplazar la arquitectura web.
+Esta etapa se centra en interpolación temporal, reutilización de instancias y modelos existentes. C++/WebAssembly no se añade porque no hay un cálculo pesado medido que lo justifique; no sustituiría la necesidad de mejorar trayectorias y animaciones.
 
 ## Límites pendientes
 
-- El personaje sigue siendo una figura geométrica provisional, no un modelo riggeado de producción.
-- No hay audio, actuación facial, animación esquelética ni editor visual de keyframes.
-- La mejora de rendimiento debe comprobarse en el teléfono objetivo; no se ha afirmado una cifra de FPS sin medirla.
+- Los modelos se descargan de otro repositorio y necesitan conexión; si falla la descarga, se registra el error y permanece el respaldo geométrico.
+- La fluidez final debe probarse en el teléfono objetivo; falta medir FPS y revisar visualmente la orientación real de los modelos.
+- Si los GLB no contienen clips de caminata, el movimiento secundario actual no reemplaza una animación esquelética de caminar; habrá que retargetear una animación compatible.
