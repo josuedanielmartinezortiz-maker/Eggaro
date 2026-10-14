@@ -1,12 +1,13 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/DRACOLoader.js";
 
 const $ = s => document.querySelector(s);
 const canvas = $("#scene"), stage = $("#stage"), intro = $("#intro");
 const startButton = $("#start"), playButton = $("#play"), restartButton = $("#restart");
 const timeline = $("#timeline"), timecode = $("#timecode"), shotLabel = $("#shot-label"), statusLabel = $("#status");
 const DURATION = 24;
-const scene = new THREE.Scene();
+const scene = new THREE.Scene();\nconst provisionalWorld = new THREE.Group();\nprovisionalWorld.name = "escenario_provisional_respaldo";\nscene.add(provisionalWorld);
 scene.background = new THREE.Color("#a8cfda");
 scene.fog = new THREE.FogExp2("#b8d1ce", .009);
 
@@ -45,9 +46,9 @@ function mesh(geometry, material, parent = scene, castsShadow = true) {
   return m;
 }
 
-const ground = mesh(new THREE.PlaneGeometry(220, 220), groundMat, scene, false);
+const ground = mesh(new THREE.PlaneGeometry(220, 220), groundMat, provisionalWorld, false);
 ground.rotation.x = -Math.PI / 2; ground.position.y = -.08; ground.receiveShadow = true;
-const path = mesh(new THREE.PlaneGeometry(5.5, 90), pathMat, scene, false);
+const path = mesh(new THREE.PlaneGeometry(5.5, 90), pathMat, provisionalWorld, false);
 path.rotation.x = -Math.PI / 2; path.position.set(0, -.035, -18);
 
 // Reproducible world generation: identical layout each time, but with variation in scale and color.
@@ -81,7 +82,7 @@ for (let i = 0; i < TREE_COUNT; i++) {
 }
 for (const instanced of [trunks, crowns, crownTops]) instanced.instanceMatrix.needsUpdate = true;
 crowns.instanceColor.needsUpdate = true; crownTops.instanceColor.needsUpdate = true;
-scene.add(trunks, crowns, crownTops);
+provisionalWorld.add(trunks, crowns, crownTops);
 
 // Flowers are also instanced instead of creating 260 separate draw calls.
 const FLOWER_COUNT = 260;
@@ -97,11 +98,11 @@ for (let i = 0; i < FLOWER_COUNT; i++) {
   flowers.setMatrixAt(i, dummy.matrix); flowers.setColorAt(i, flowerColors[i % flowerColors.length]);
 }
 flowers.instanceMatrix.needsUpdate = true; flowers.instanceColor.needsUpdate = true;
-scene.add(flowers);
+provisionalWorld.add(flowers);
 
 function makeCabin(x, z, scale = 1) {
   const cabin = new THREE.Group();
-  cabin.position.set(x, 0, z); cabin.scale.setScalar(scale); scene.add(cabin);
+  cabin.position.set(x, 0, z); cabin.scale.setScalar(scale); provisionalWorld.add(cabin);
   const body = mesh(new THREE.BoxGeometry(4.6, 2.8, 3.6), wallMat, cabin); body.position.y = 1.4;
   const roof = mesh(new THREE.ConeGeometry(3.5, 2.3, 4), roofMat, cabin);
   roof.position.y = 3.75; roof.rotation.y = Math.PI / 4; roof.scale.z = .82;
@@ -147,6 +148,65 @@ scene.add(heroMike, heroMicaela);
 heroMike.visible = heroMicaela.visible = false;
 const mixers = [];
 const modelLoader = new GLTFLoader();
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath("https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/libs/draco/");
+modelLoader.setDRACOLoader(dracoLoader);
+
+// Prioriza el mapa 3D original del proyecto; el segundo archivo es respaldo.
+const MAP_URLS = [
+  "https://raw.githubusercontent.com/josuedanielmartinezortiz-maker/Eggaro/87f4dc4b8c1a58f5799cc6b8889c42d73f7f7290/Forbidden_Village_3D_Realista.glb",
+  "https://raw.githubusercontent.com/josuedanielmartinezortiz-maker/Eggaro/87f4dc4b8c1a58f5799cc6b8889c42d73f7f7290/Forbidden%20Village%20Path_Meshy_AI_2026-09-29_66c9cc.glb"
+];
+async function loadDesignedMap() {
+  for (const url of MAP_URLS) {
+    try {
+      statusLabel.textContent = "CARGANDO MAPA ORIGINAL…";
+      const gltf = await modelLoader.loadAsync(url);
+      const map = gltf.scene;
+      map.name = "EGGARO_MAPA_ORIGINAL";
+      map.updateMatrixWorld(true);
+      let bounds = new THREE.Box3().setFromObject(map);
+      let size = bounds.getSize(new THREE.Vector3());
+      // Si el camino quedó orientado a lo ancho, gira el escenario para que avance en Z.
+      if (size.x > size.z * 1.15) {
+        map.rotation.y = Math.PI / 2;
+        map.updateMatrixWorld(true);
+        bounds = new THREE.Box3().setFromObject(map);
+        size = bounds.getSize(new THREE.Vector3());
+      }
+      const longest = Math.max(size.x, size.z);
+      if (!Number.isFinite(longest) || longest < 1 || !Number.isFinite(size.y)) {
+        throw new Error("El mapa no tiene dimensiones válidas");
+      }
+      // Escala uniforme, centra el terreno y coloca su punto más bajo en Y=0.
+      const scale = 92 / longest;
+      const center = bounds.getCenter(new THREE.Vector3());
+      map.scale.setScalar(scale);
+      map.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
+      map.traverse(object => {
+        if (!object.isMesh) return;
+        object.castShadow = false;
+        object.receiveShadow = true;
+        if (object.material) {
+          const materials = Array.isArray(object.material) ? object.material : [object.material];
+          for (const material of materials) {
+            if ("roughness" in material) material.roughness = Math.max(material.roughness ?? .75, .55);
+          }
+      }
+      });
+      scene.add(map);
+      provisionalWorld.visible = false;
+      statusLabel.textContent = "MAPA ORIGINAL CARGADO";
+      return true;
+    } catch (error) {
+      console.warn("No se pudo cargar el mapa EGGARO; se probará el siguiente archivo.", error);
+    }
+  }
+  statusLabel.textContent = "MAPA NO DISPONIBLE · ESCENARIO DE RESPALDO";
+  return false;
+}
+loadDesignedMap();
+
 const modelURLs = {
   mike: "https://raw.githubusercontent.com/josuedanielmartinezortiz-maker/Game/main/3D/mike.glb",
   micaela: "https://raw.githubusercontent.com/josuedanielmartinezortiz-maker/Game/main/3D/micaela.glb"
