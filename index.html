@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#101a22">
+  <title>MINI PIPIPOY6 · Laboratorio de cinemáticas</title>
+  <link rel="stylesheet" href="./src/styles.css">
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}
+  </script>
+</head>
+<body>
+  <main id="stage" aria-label="Escena cinematográfica 3D">
+    <canvas id="scene"></canvas>
+    <div class="vignette"></div>
+    <header class="brand">
+      <span class="eyebrow">MINI PIPIPOY6 PRESENTA</span>
+      <h1>EGGARO <span>— CINEMATIC LAB</span></h1>
+    </header>
+    <section class="intro" id="intro">
+      <p class="eyebrow">SECUENCIA 001 · PROTOTIPO</p>
+      <h2>Un nuevo comienzo.</h2>
+      <p>Una cámara. Un mundo. Una historia por construir.</p>
+      <button id="start" class="primary">▶ Iniciar cinemática</button>
+    </section>
+    <div class="shot-label" id="shot-label">PLANO 01 · ESTABLECIMIENTO</div>
+    <footer class="controls">
+      <button id="play" aria-label="Reproducir o pausar">Ⅱ</button>
+      <button id="restart" aria-label="Reiniciar cinemática">↺</button>
+      <div class="timeline-wrap">
+        <div class="time-row"><span id="timecode">00:00</span><span id="duration">00:24</span></div>
+        <input id="timeline" type="range" min="0" max="24" step="0.01" value="0" aria-label="Posición de la cinemática">
+        <div class="markers"><span>ESTABLECER</span><span>ACERCAMIENTO</span><span>REVELACIÓN</span></div>
+      </div>
+      <span class="status" id="status">LISTO</span>
+    </footer>
+    <div class="hint" id="hint">Prototipo procedural · sin modelos externos</div>
+  </main>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
