@@ -7,7 +7,10 @@ const canvas = $("#scene"), stage = $("#stage"), intro = $("#intro");
 const startButton = $("#start"), playButton = $("#play"), restartButton = $("#restart");
 const timeline = $("#timeline"), timecode = $("#timecode"), shotLabel = $("#shot-label"), statusLabel = $("#status");
 const DURATION = 24;
-const scene = new THREE.Scene();\nconst provisionalWorld = new THREE.Group();\nprovisionalWorld.name = "escenario_provisional_respaldo";\nscene.add(provisionalWorld);
+const scene = new THREE.Scene();
+const provisionalWorld = new THREE.Group();
+provisionalWorld.name = "escenario_provisional_respaldo";
+scene.add(provisionalWorld);
 scene.background = new THREE.Color("#a8cfda");
 scene.fog = new THREE.FogExp2("#b8d1ce", .009);
 
