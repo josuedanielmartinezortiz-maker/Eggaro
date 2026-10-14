@@ -27,6 +27,7 @@ sun.castShadow = true;
 sun.shadow.mapSize.set(mobile ? 512 : 768, mobile ? 512 : 768);
 Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 70 });
 sun.shadow.bias = -.00025;
+sun.shadow.camera.updateProjectionMatrix();
 scene.add(sun);
 
 const mat = (color, roughness = 1) => new THREE.MeshStandardMaterial({ color, roughness });
