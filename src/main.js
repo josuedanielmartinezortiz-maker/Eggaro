@@ -195,7 +195,7 @@ async function loadDesignedMap() {
           for (const material of materials) {
             if ("roughness" in material) material.roughness = Math.max(material.roughness ?? .75, .55);
           }
-      }
+        }
       });
       scene.add(map);
       provisionalWorld.visible = false;
