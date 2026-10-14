@@ -1,44 +1,38 @@
 # Laboratorio de cinemáticas EGGARO
 
-## Meta del primer prototipo
+## Estado del prototipo
 
-Construir un sistema propio de cinemáticas para navegador, que podamos ampliar sin depender de un editor comercial. Esta primera versión usa Three.js para dibujar la escena y JavaScript para controlar el tiempo, la cámara y el personaje de prueba.
+La secuencia continúa usando Three.js y JavaScript para ejecutarse directamente en GitHub Pages. Esta revisión corrige el encuadre de cámara, la progresión de planos, el formato móvil y el coste de dibujar el escenario.
 
-## Cómo probarlo
+## Cambios realizados
 
-Abre la página de GitHub Pages del repositorio. Pulsa **Iniciar cinemática**. Puedes pausar, reiniciar o arrastrar la línea de tiempo. En móvil se limita la resolución del renderizador para cuidar el rendimiento.
+- Se reorganizaron los keyframes para que los objetivos de cámara estén cerca de la acción, en vez de apuntar detrás del personaje.
+- La presentación, el seguimiento y el plano final ahora usan trayectorias coordinadas con el movimiento del personaje.
+- Se ajustó el campo de visión en pantallas verticales.
+- Los árboles y las flores usan `THREE.InstancedMesh`: conservan variaciones de tamaño/color sin crear cientos de mallas independientes.
+- Se redujo el coste de sombras y resolución en móviles.
+- Se corrigió el reinicio desde el final y el estado de reproducción al arrastrar la línea de tiempo.
 
-## Cómo está organizado
+## Probar
+
+1. Abre GitHub Pages y recarga la página.
+2. Pulsa **Iniciar cinemática**.
+3. Prueba pausa, reinicio y la barra de tiempo.
+4. En el teléfono, prueba orientación vertical y horizontal.
+
+## Arquitectura
 
 - `index.html`: interfaz y carga de módulos.
-- `src/main.js`: escenario procedural, personaje de prueba, secuencia temporal y planos.
-- `src/styles.css`: interfaz adaptable a pantallas pequeñas.
-- `assets/`: lugar para modelos, audio y texturas creados o asistidos por IA.
+- `src/main.js`: escenario procedural, instancias, cámara, personaje y reloj de secuencia.
+- `src/styles.css`: interfaz adaptable.
+- `assets/`: futuro espacio para modelos, texturas y audio.
 
-## Ideas clave que estamos aprendiendo
+## Por qué no se añadió C++ en esta corrección
 
-1. **Escena:** objetos, luces, materiales y cámara.
-2. **Tiempo de secuencia:** cada plano tiene un instante de inicio.
-3. **Interpolación:** la cámara pasa de una posición a otra suavemente.
-4. **Animación:** el movimiento se calcula a partir del tiempo de la secuencia.
-5. **Controles de reproducción:** pausa, reinicio y búsqueda temporal.
+El problema principal era de composición de cámara y de exceso de mallas separadas, no de cálculos matemáticos pesados. C++ tendría que compilarse a WebAssembly y requeriría un flujo de compilación/carga; no arreglaría por sí mismo el encuadre. Primero conviene medir el rendimiento de esta versión. Si aparece un cálculo costoso concreto, se podrá probar un módulo WASM aislado sin reemplazar la arquitectura web.
 
-## Próximas etapas
+## Límites pendientes
 
-1. Separar la secuencia en datos JSON para editar planos sin modificar el motor.
-2. Añadir pistas independientes para cámara, personajes, audio y texto.
-3. Importar un personaje GLB con esqueleto y animaciones.
-4. Incorporar audio, ambiente y transiciones.
-5. Crear una interfaz de edición de planos.
-6. Usar IA cuando convenga para concept art, texturas, música/ambiente con licencia adecuada o modelos de referencia. Los recursos generados deberán optimizarse y probarse en el móvil.
-
-## Decisiones técnicas
-
-Por ahora usamos JavaScript y Three.js porque GitHub Pages sirve archivos estáticos y los navegadores pueden ejecutarlos directamente. C++/WebAssembly se evaluará más adelante para módulos concretos si las mediciones muestran una necesidad real; no es automáticamente más rápido para renderizar esta escena. Java puede servir para herramientas auxiliares de creación o conversión de datos, no como código que el navegador ejecute directamente en Pages.
-
-## Límites conocidos del prototipo
-
-- El personaje es una figura geométrica provisional, no un rig de producción.
-- Los árboles, la casa y el suelo se generan con geometría simple.
-- No hay audio ni editor visual de keyframes todavía.
-- La iluminación y sombras están limitadas deliberadamente para móviles.
+- El personaje sigue siendo una figura geométrica provisional, no un modelo riggeado de producción.
+- No hay audio, actuación facial, animación esquelética ni editor visual de keyframes.
+- La mejora de rendimiento debe comprobarse en el teléfono objetivo; no se ha afirmado una cifra de FPS sin medirla.
