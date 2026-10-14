@@ -12,6 +12,10 @@ Laboratorio web basado en Three.js, conservando el arranque sencillo de GitHub P
 - Árboles y flores siguen usando `THREE.InstancedMesh` para reducir llamadas de dibujo.
 - El muñeco geométrico permanece como respaldo mientras no cargue ninguno de los modelos originales.
 
+## Recursos originales
+
+Los modelos se cargan desde `Game/3D/mike.glb` y `Game/3D/micaela.glb`. El mapa de importación declara explícitamente `three/addons/` para cargar `GLTFLoader` desde la misma versión de Three.js.
+
 ## Probar
 
 1. Abre [EGGARO Pages](https://josuedanielmartinezortiz-maker.github.io/Eggaro/) con conexión a internet.

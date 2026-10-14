@@ -185,9 +185,9 @@ async function loadDesignedCharacter(name, wrapper) {
       mixers.push(mixer);
     }
     modelReady[name] = true;
-    heroMike.visible = modelReady.mike;
-    heroMicaela.visible = modelReady.micaela;
-    character.visible = !(modelReady.mike || modelReady.micaela);
+    heroMike.visible = elapsed >= 4.35 && modelReady.mike;
+    heroMicaela.visible = elapsed >= 4.35 && modelReady.micaela;
+    character.visible = elapsed >= 4.35 && !(modelReady.mike || modelReady.micaela);
   } catch (error) {
     console.warn("No se pudo cargar el modelo original de " + name, error);
   }
@@ -306,8 +306,8 @@ function frame(stamp) {
   requestAnimationFrame(frame);
   if (!lastStamp) lastStamp = stamp;
   const dt = Math.min((stamp - lastStamp) / 1000, .05); lastStamp = stamp;
-  for (const mixer of mixers) mixer.update(dt);
   if (playing) {
+    for (const mixer of mixers) mixer.update(dt);
     const next = elapsed + dt;
     if (next >= DURATION) {
       setTime(DURATION); playing = false; playButton.textContent = "▶"; statusLabel.textContent = "FIN";
